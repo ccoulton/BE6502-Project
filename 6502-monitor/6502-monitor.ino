@@ -26,8 +26,6 @@ void setup() {
   pinMode(CLOCK, INPUT);
   pinMode(READ_WRITE, INPUT);
   pinMode(LED, OUTPUT);
-  
-  attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
 }
 
 void onClock() {
@@ -37,28 +35,33 @@ void onClock() {
 
 void loop(){
   if (clockFlag) {
+    detachInterrupt(onClock);
     clockFlag = false;
     char output[15];
-  
+
     unsigned int address = 0;
-    for (int n = 0; n < 16; n++) {
+    for (int n = 15; n >= 0; n--) {
       int bit = ADDR.digitalRead(n) ? 1 : 0;
       Serial.print(bit);
       address = (address << 1) + bit;
     }
-    //uint16_t hexaddress = ADDR.readGPIOAB();
+    uint16_t hexaddress = ADDR.readGPIOAB();
     Serial.print("  ");
-    
+
     unsigned int data = 0;
     for (int n = 0; n < 8; n++) {
       int bit = DATA.digitalRead(n) ? 1 : 0;
       Serial.print(bit);
       data = (data << 1) + bit;
     }
-  
+
     uint8_t hexdata = DATA.readGPIO();//*/
-  
+
     sprintf(output, "   %04x  %c %02x", address, digitalRead(READ_WRITE) ? 'r' : 'W', data);
-    Serial.println(output);  
+    Serial.println(output);
+    sprintf(output, "%04x, %02x", hexaddress, hexdata);
+    Serial.println(output);
+  } else {
+    attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
   }
 }
