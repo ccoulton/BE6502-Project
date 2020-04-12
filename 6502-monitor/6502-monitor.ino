@@ -49,7 +49,7 @@ void loop(){
     Serial.print("  ");
 
     unsigned int data = 0;
-    for (int n = 0; n < 8; n++) {
+    for (int n = 7; n >= 0; n--) {
       int bit = DATA.digitalRead(n) ? 1 : 0;
       Serial.print(bit);
       data = (data << 1) + bit;
