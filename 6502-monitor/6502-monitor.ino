@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Wire.h>
 #include "Adafruit_MCP23017.h"
 #include "Adafruit_MCP23008.h"
@@ -17,19 +18,16 @@ void setup() {
   Serial.begin(57600);
   for (int n = 0; n < 16; n++) {
     ADDR.pinMode(n, INPUT);
-    //ADDR.pullUp(n, HIGH);
   }
   for (int n = 0; n < 8; n++) {
     DATA.pinMode(n, INPUT);
-    //DATA.pullUp(n, HIGH);
-  }//*/
+  }
   pinMode(CLOCK, INPUT);
   pinMode(READ_WRITE, INPUT);
   pinMode(LED, OUTPUT);
 }
 
 void onClock() {
-  //Serial.print("clock");
   clockFlag = true;
 }
 
