@@ -4,15 +4,17 @@
 #define SHIFT_CLK 2
 #define SHIFT_LATCH 3
 #define WRITE_EN 7
+#define EEPROM_D0 0
+#define EEPROM_D7 7
 
-const int DATA[] = {9, 10, 11, 12, 13, 23, 22, 21};
+int DATA_PIN[] = {A0, A1, A2, A3, A4, A5, 9, 10};
 /*
  * Output the address bits and outputEnable signal using shift registers.
  */
 void setAddress(int address, bool outputEnable) {
   shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, (address >> 8) | (outputEnable ? 0x00 : 0x80));
   shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, address);
-
+  //trigger the shift register to trigger all outputs at once rather than as they are clocked in.
   digitalWrite(SHIFT_LATCH, LOW);
   digitalWrite(SHIFT_LATCH, HIGH);
   digitalWrite(SHIFT_LATCH, LOW);
@@ -23,14 +25,14 @@ void setAddress(int address, bool outputEnable) {
  * Read a byte from the EEPROM at the specified address.
  */
 byte readEEPROM(int address) {
-  for (int pin = 0; pin <= 7; pin += 1) {
-    pinMode(DATA[pin], INPUT);
+  for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin += 1) {
+    pinMode(DATA_PIN[pin], INPUT);
   }
   setAddress(address, /*outputEnable*/ true);
 
   byte data = 0;
-  for (int pin = 7; pin >= 0; pin -= 1) {
-    data = (data << 1) + digitalRead(DATA[pin]);
+  for (int pin = EEPROM_D7; pin >= EEPROM_D0; pin -= 1) {
+    data = (data << 1) + digitalRead(DATA_PIN[pin]);
   }
   return data;
 }
@@ -41,12 +43,12 @@ byte readEEPROM(int address) {
  */
 void writeEEPROM(int address, byte data) {
   setAddress(address, /*outputEnable*/ false);
-  for (int pin = 0; pin <= 7; pin += 1) {
+  for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin += 1) {
     pinMode(DATA[pin], OUTPUT);
   }
 
-  for (int pin = 0; pin <= 7; pin += 1) {
-    digitalWrite(DATA[pin], data & 1);
+  for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin += 1) {
+    digitalWrite(DATA_PIN[pin], data & 1);
     data = data >> 1;
   }
   digitalWrite(WRITE_EN, LOW);
@@ -91,11 +93,10 @@ void setup() {
   digitalWrite(WRITE_EN, HIGH);
   pinMode(WRITE_EN, OUTPUT);
   Serial.begin(57600);
-  while(!Serial){;}
   // Erase entire EEPROM
   Serial.print("Erasing EEPROM");
   for (int address = 0; address <= 2047; address += 1) {
-    writeEEPROM(address, 0xff);
+    writeEEPROM(address, 0xea);
 
     if (address % 64 == 0) {
       Serial.print(".");
