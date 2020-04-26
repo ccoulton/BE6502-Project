@@ -1,0 +1,3 @@
+[submodule "TommyPROM"]
+	path = TommyPROM
+	url = https://github.com/TomNisbet/TommyPROM.git

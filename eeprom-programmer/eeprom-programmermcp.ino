@@ -108,7 +108,7 @@ void setup() {
   delay(1);
 
   Serial.print("Erasing EEPROM");
-  for (uint16_t address = 0; address < sizeof(data); address++) {
+  for (uint16_t address = 0; address < 0x7fff; address++) {
     writeEEPROM(address, 0xff);
 
     if (address % 0x3f == 0) {
@@ -117,7 +117,7 @@ void setup() {
     if (address % 0x03ff == 0){
       Serial.print("  ");
     }
-    if (address % 0x1000 == 0){
+    if (address % 0x07ff == 0){
       Serial.println("");
     }
   }
