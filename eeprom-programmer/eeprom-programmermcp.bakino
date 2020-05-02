@@ -3,9 +3,7 @@
 #include "Adafruit_MCP23017.h"
 #include "Adafruit_MCP23008.h"
 
-#define WRITE_EN A2
-#define OUTPUT_EN A1
-#define CHIP_EN A0
+#define WRITE_EN A5
 #define EEPROM_D0 0
 #define EEPROM_D7 7
 Adafruit_MCP23017 ADDR;
@@ -14,7 +12,7 @@ Adafruit_MCP23008 DATA;
 /*
  * Output the address bits and outputEnable signal using shift registers.
  */
-void setAddress(uint16_t address) {
+void setAddress(uint16_t address, bool outputEnable) {
   ADDR.writeGPIOAB(address);
   /*shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, (address >> 8) | (outputEnable ? 0x00 : 0x80));
   shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, address);*/
@@ -28,16 +26,9 @@ byte readEEPROM(uint16_t address) {
   for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin++) {
     DATA.pinMode(pin, INPUT);
   }
-  setAddress(address);
+  setAddress(address, /*outputEnable*/ true);
 
-  digitalWrite(WRITE_EN, HIGH);
-  digitalWrite(OUTPUT_EN, LOW);
-  digitalWrite(CHIP_EN, LOW);
   byte data = DATA.readGPIO();
-  digitalWrite(OUTPUT_EN, HIGH);
-  digitalWrite(CHIP_EN, HIGH);
-  delay(1);
-
   return data;
 }
 
@@ -46,20 +37,16 @@ byte readEEPROM(uint16_t address) {
  * Write a byte to the EEPROM at the specified address.
  */
 void writeEEPROM(uint16_t address, byte data) {
+  setAddress(address, /*outputEnable*/ false);
   for (int pin = EEPROM_D0; pin <= EEPROM_D7; pin++) {
     DATA.pinMode(pin, OUTPUT);
   }
-  setAddress(address);
-  
-  digitalWrite(OUTPUT_EN, HIGH);
-  digitalWrite(CHIP_EN, LOW);
-  digitalWrite(WRITE_EN, LOW);
-  DATA.writeGPIO(data);
-  delay(1);
 
-  digitalWrite(CHIP_EN, HIGH);
+  DATA.writeGPIO(data);
+  digitalWrite(WRITE_EN, LOW);
+  delayMicroseconds(1);
   digitalWrite(WRITE_EN, HIGH);
-  delay(1);
+  delay(10);
 }
 
 
@@ -92,23 +79,17 @@ byte data[] = { 0x81, 0xcf, 0x92, 0x86, 0xcc, 0xa4, 0xa0, 0x8f, 0x80, 0x84, 0x88
 
 void setup() {
   ADDR.begin(0);
-  DATA.begin(2);
+  DATA.begin(1);
   for (int n = 0; n < 16; n++) {
     ADDR.pinMode(n, OUTPUT);
   }
-  pinMode(OUTPUT_EN, OUTPUT);
-  pinMode(CHIP_EN, OUTPUT);
   pinMode(WRITE_EN, OUTPUT);
+  digitalWrite(WRITE_EN, HIGH);
   Serial.begin(57600);
   while(!Serial){;} //wait for serial
   // Erase entire EEPROM
-  digitalWrite(OUTPUT_EN, HIGH);
-  digitalWrite(CHIP_EN, HIGH);
-  digitalWrite(WRITE_EN, HIGH);
-  delay(1);
-
   Serial.print("Erasing EEPROM");
-  for (uint16_t address = 0; address < 0x7fff; address++) {
+  for (uint16_t address = 0; address < sizeof(data); address++) {
     writeEEPROM(address, 0xff);
 
     if (address % 0x3f == 0) {
@@ -117,7 +98,7 @@ void setup() {
     if (address % 0x03ff == 0){
       Serial.print("  ");
     }
-    if (address % 0x07ff == 0){
+    if (address % 0x1000 == 0){
       Serial.println("");
     }
   }
@@ -128,6 +109,7 @@ void setup() {
   Serial.print("Programming EEPROM");
   for (uint16_t address = 0; address < sizeof(data); address++) {
     writeEEPROM(address, data[address]);
+
     if (address % 64 == 0) {
       Serial.print(".");
     }
