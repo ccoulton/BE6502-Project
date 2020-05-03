@@ -6,9 +6,13 @@
 //porte nc, nc, nc, nc, nc, 7, nc
 //portf a5, a4, nc, nc, a3, a2, a1, a0
 //SHIFT_DATA a5, SHIFT_CLK  a4 SHIFT_LATCH A3
-#define CONTROL_PORT    PORTF
-#define CONTROL_DIR     DDRF
-#define CONTROL_OUTPUT  0xf3
+//write_EN 12, output 3, chip_en 2
+#define CONTROL_PORT    PORTD
+#define CONTROL_DIR     DDRD
+#define CONTROL_OUTPUT  0x4b
+#define SHIFT_PORT      PORTF
+#define SHIFT_DIR       DDRF
+#define SHIFT_OUTPUT    0x13
 #define LSB_PORT        PORTB
 #define LSB_OUTPUT      0xfe
 #define LSB_INPUT       0x01
@@ -17,20 +21,22 @@
 #define MSB_OUTPUT      0x40
 #define EEPROM_D0 0
 #define EEPROM_D7 7
-
-int DATA_PIN[] = {SCK, MISO, MOSI, 8, 9, 10, 11, 7};
+int DATA_PIN[] = {SCK, MOSI, MISO, 8, 9, 10, 11, 7};
 /*
  * Output the address bits and outputEnable signal using shift registers.
  */
-void setAddress(uint16_t address, bool outputEnable) {
+void setAddress(uint16_t address) {
+
   for (int addressPin = 0; addressPin <= 14; addressPin++) {
-    CONTROL_PORT =  0x01&address;
-    CONTROL_PORT |= 0x02;//cycle clock high
-    CONTROL_PORT &=~0x02;//cycle clock low
+    SHIFT_PORT =  0x01&address;
+    SHIFT_PORT |= 0x02;//cycle clock high
+    SHIFT_PORT &=~0x02;//cycle clock low
     address >>= 1;
   }
-  CONTROL_PORT |= 0x10; //latch high
-  CONTROL_PORT &=~0x10; //latch low
+  SHIFT_PORT &= 0x10;
+  SHIFT_PORT |= 0x10; //latch high
+  SHIFT_PORT &=~0x10; //latch low
+  delayMicroseconds(1);
   //shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, (address >> 8));
   //shiftOut(SHIFT_DATA, SHIFT_CLK, MSBFIRST, address);
   //trigger the shift register to trigger all outputs at once rather than as they are clocked in.
@@ -47,12 +53,15 @@ void setAddress(uint16_t address, bool outputEnable) {
 byte readEEPROM(int address) {
   DDRB = LSB_INPUT;
   DDRE = MSB_INPUT;
-  setAddress(address, /*outputEnable*/ true);
-
+  CONTROL_PORT |= 0x40; //Write_en high
+  CONTROL_PORT &=~0x03; //chip & output low
+  setAddress(address);
+  delayMicroseconds(2);
   byte data = 0;
   for (int pin = EEPROM_D7; pin >= EEPROM_D0; pin -= 1) {
     data = (data << 1) + digitalRead(DATA_PIN[pin]);
   }
+  CONTROL_PORT |= 0x43;
   return data;
 }
 
@@ -60,12 +69,23 @@ byte readEEPROM(int address) {
 /*
  * Write a byte to the EEPROM at the specified address.
  */
+//write_EN 12, output 3, chip_en 2
+// 6            0           1
 void writeEEPROM(uint16_t address, byte data) {
   DDRE = MSB_OUTPUT;
   DDRB = LSB_OUTPUT;
-  setAddress(address, /*outputEnable*/ false);
+  setAddress(address);
+  CONTROL_PORT |= 0x01;//output_ENABLE HIGH
+  CONTROL_PORT &=~0x02;//Chip_ENABLE LOW
+  CONTROL_PORT &=~0x40;//WRITE_EN LOW
+  delayMicroseconds(1);
   MSB_PORT = data>>1;
   LSB_PORT = data<<1;
+  delayMicroseconds(1);
+  CONTROL_PORT |= 0x40;//WRITE_EN HIGH
+  CONTROL_PORT |= 0x02;//CHIP_EN HIGH
+  CONTROL_PORT &=~0x01;//OUTPUT_EN LOW
+  delayMicroseconds(1);
   //digitalWrite(WRITE_EN, LOW);
   //delayMicroseconds(1);
   //digitalWrite(WRITE_EN, HIGH);s
@@ -102,8 +122,9 @@ byte data[] = { 0x81, 0xcf, 0x92, 0x86, 0xcc, 0xa4, 0xa0, 0x8f, 0x80, 0x84, 0x88
 
 void setup() {
   // put your setup code here, to run once:
-  CONTROL_PORT |= 0xe0;
+  CONTROL_PORT |= 0x43;
   CONTROL_DIR = CONTROL_OUTPUT;
+  SHIFT_DIR = SHIFT_OUTPUT;
   DDRE = MSB_OUTPUT; //0b01000000
   DDRB = LSB_OUTPUT; //0b11111110
   Serial.begin(57600);
@@ -115,13 +136,15 @@ void setup() {
   writeEEPROM(0x5555, 0x80);
   writeEEPROM(0x5555, 0xAA);
   writeEEPROM(0x2AAA, 0x55);
-  writeEEPROM(0x5555, 0x10);
+  writeEEPROM(0x5555, 0x20);
   time = micros() - time;
   delay(20);
   Serial.println(time);
+  Serial.println(readEEPROM(0x2AAA),HEX);
+  Serial.println(readEEPROM(0x5555),HEX);
   Serial.print("Erasing EEPROM");
   for (uint16_t address = 0; address < 0x7fff; address++) {
-    writeEEPROM(address, 0x88);
+    writeEEPROM(address, 0xea);
     if (address % 0x0800 == 0){
       char output[5];
       sprintf(output, "%04x:", address);
@@ -137,12 +160,14 @@ void setup() {
   }
   Serial.println(" done");
 
-
+  setAddress(0);
   // Program data bytes
   Serial.print("Programming EEPROM");
   for (uint16_t address = 0; address < sizeof(data); address += 1) {
     writeEEPROM(address, data[address]);
-    /*if (address % 64 == 0) {
+    //while(!Serial.available()){;}
+    //Serial.read();
+    if (address % 64 == 0) {
       Serial.print(".");
     }//*/
   }
