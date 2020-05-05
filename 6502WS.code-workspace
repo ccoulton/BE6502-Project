@@ -5,9 +5,6 @@
 		},
 		{
 			"path": "eeprom-programmer"
-		},
-		{
-			"path": "."
 		}
 	],
 	"settings": {}
