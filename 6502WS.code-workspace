@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "6502-monitor"
+		},
+		{
+			"path": "eeprom-programmer"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}
