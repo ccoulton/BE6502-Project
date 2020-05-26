@@ -1,0 +1,3 @@
+[submodule "x6502"]
+	path = x6502
+	url = https://github.com/dbuchwald/x6502.git

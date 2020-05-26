@@ -5,7 +5,17 @@
 		},
 		{
 			"path": "eeprom-programmer"
+		},
+		{
+			"path": "x6502"
+		},
+		{
+			"path": "6502Code"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"editor.fontFamily": "Fira Code",
+    "editor.fontSize": 16,
+    "editor.fontLigatures": true,
+	},
 }

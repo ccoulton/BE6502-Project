@@ -2,15 +2,32 @@
 #include <Wire.h>
 #include "Adafruit_MCP23017.h"
 #include "Adafruit_MCP23008.h"
-/*const char ADDR[] = {22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52};
-const char DATA[] = {39, 41, 43, 45, 47, 49, 51, 53};*/
 Adafruit_MCP23017 ADDR;
 Adafruit_MCP23008 DATA;
 bool clockFlag = false;
 
+const char opcodeMatrix[256][5] = {\
+             "BRK", "ORA", ""   , "", "TSB", "ORA", "ASL", "RMB0", "PHP", "ORA", "ASL", ""   , "TSB", "ORA", "ASL", "BBR0",\
+             "BPL", "ORA", "ORA", "", "TRB", "ORA", "ASL", "RMB1", "CLC", "ORA", "INC", ""   , "TRB", "ORA", "ASL", "BBR1",\
+             "JSR", "AND", ""   , "", "BIT", "AND", "ROL", "RMB2", "PLP", "AND", "ROL", ""   , "BIT", "AND", "ROL", "BBR2",\
+             "BMI", "AND", "AND", "", "BIT", "AND", "ROL", "RMB3", "SEC", "AND", "DEC", ""   , "BIT", "AND", "ROL", "BBR3",\
+             "RTI", "EOR", ""   , "", ""   , "EOR", "LSR", "RMB4", "PHA", "EOR", "LSR", ""   , "JMP", "EOR", "LSR", "BBR4",\
+             "BVC", "EOR", "EOR", "", ""   , "EOR", "LSR", "RMB5", "CLI", "EOR", "PHY", ""   , ""   , "EOR", "LSR", "BBR5",\
+             "RTS", "ADC", ""   , "", "STZ", "ADC", "ROR", "RMB6", "PLA", "ADC", "ROR", ""   , "JMP", "ADC", "ROR", "BBR6",\
+             "BVS", "ADC", "ADC", "", "STZ", "ADC", "ROR", "RMB7", "SEI", "ADC", "PLY", ""   , "JMP", "ADC", "ROR", "BBR7",\
+             "BRA", "STA", ""   , "", "STY", "STA", "STX", "SMB0", "DEY", "BIT", "TXA", ""   , "STY", "STA", "STX", "BBS0",\
+             "BCC", "STA", "STA", "", "STY", "STA", "STX", "SMB1", "TYA", "STA", "TXS", ""   , "STZ", "STA", "STZ", "BBS1",\
+             "LDY", "LDA", "LDX", "", "LDY", "LDA", "LDX", "SMB2", "TAY", "LDA", "TAX", ""   , "LDY", "LDA", "LDX", "BBS2",\
+             "BCS", "LDA", "LDA", "", "LDY", "LDA", "LDX", "SMB3", "CLV", "LDA", "TSX", ""   , "LDY", "LDA", "LDX", "BBS3",\
+             "CPY", "CMP", ""   , "", "CPY", "CMP", "DEC", "SMB4", "INY", "CMP", "DEX", "WAI", "CPY", "CMP", "DEC", "BBS4",\
+             "BNE", "CMP", "CMP", "", ""   , "CMP", "DEC", "SMB5", "CLD", "CMP", "PHX", "STP", ""   , "CMP", "DEC", "BBS5",\
+             "CPX", "SBC", ""   , "", "CPX", "SBC", "INC", "SMB6", "INX", "SBC", "NOP", ""   , "CPX", "SBC", "INC", "BBS6",\
+             "BEQ", "SBC", "SBC", "", ""   , "SBC", "INC", "SMB7", "SED", "SBC", "PLX", ""   , ""   , "SBC", "INC", "BBS7"};
+
 #define CLOCK 7
 #define READ_WRITE 5
 #define LED 13
+#define SYNC 9
 
 void setup() {
   ADDR.begin(0);
@@ -25,6 +42,8 @@ void setup() {
   pinMode(CLOCK, INPUT);
   pinMode(READ_WRITE, INPUT);
   pinMode(LED, OUTPUT);
+  pinMode(SYNC, INPUT);
+  attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
 }
 
 void onClock() {
@@ -35,29 +54,14 @@ void loop(){
   if (clockFlag) {
     detachInterrupt(digitalPinToInterrupt(CLOCK));
     clockFlag = false;
-    char output[15];
+    char output[25];
 
-    /*unsigned int address = 0;
-    for (int n = 15; n >= 0; n--) {
-      int bit = ADDR.digitalRead(n) ? 1 : 0;
-      Serial.print(bit);
-      address = (address << 1) + bit;
-    }//*/
     uint16_t hexaddress = ADDR.readGPIOAB();
-    //Serial.print("  ");
-
-    /*unsigned int data = 0;
-    for (int n = 7; n >= 0; n--) {
-      int bit = DATA.digitalRead(n) ? 1 : 0;
-      Serial.print(bit);
-      data = (data << 1) + bit;
-    }//*/
 
     uint8_t hexdata = DATA.readGPIO();
 
-    //sprintf(output, "   %04x  %c %02x", address, digitalRead(READ_WRITE) ? 'r' : 'W', data);
-    //Serial.println(output);
-    sprintf(output, "%04x %c %02x", hexaddress, digitalRead(READ_WRITE) ? 'r' : 'W', hexdata);
+    sprintf(output, "%04x %c %02x instr:%4s", hexaddress, digitalRead(READ_WRITE) ? 'r' : 'W', hexdata,
+      digitalRead(SYNC)?opcodeMatrix[hexdata]:"EXE");
     Serial.println(output);
     attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
   }
