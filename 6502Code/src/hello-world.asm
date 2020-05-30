@@ -81,7 +81,20 @@ print_char:
     and #LCD_RS
     sta PORTA
     rts
-
-.org $fffc
-.word reset
-.word $0000
+;res = 00ffe0
+;res = 00ffe2
+;cop_isr_nat = 00ffe4
+;brk_isr_nat = 00ffe6
+;abt_isr_nat = 00ffe8
+;nmi_isr_nat = 00ffea
+;res = 00ffec
+;irq_isr_nat = 00ffee 
+.org $fff0 ; //irq vectors
+.word 0000 ;res
+.word 0000 ;res
+.word 0000 ;cop_ISR_emu = 00fff4
+.word 0000 ;res
+.word 0000 ;abt_ISR_emu = 00fff8
+.word 0000 ;nmi_ISR_emu = 00fffa
+.word reset; 00fffc 
+.word 0000 ;cnt_isr 00fffe
