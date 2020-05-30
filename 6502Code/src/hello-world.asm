@@ -13,10 +13,10 @@ LCD_RS  = $20
 .org $8000
 
 reset:
-    ldx #$ff
+    ldx #$FF
     txs 
 
-    lda #$ff
+    lda #$FF
     sta DDRB
     lda #$E0
     sta DDRA
@@ -45,12 +45,11 @@ message: .asciiz "Hello, World!"
 
 lcd_wait:
     pha
-    lda #$00
-    sta DDRB
+    stz DDRB
 lcdbusy:
     lda #LCD_RW
     sta PORTA
-    lda #(LCD_RW | LCD_EN)
+    ora #LCD_EN
     sta PORTA
     lda PORTB
     and #$80
@@ -66,12 +65,10 @@ lcdbusy:
 lcd_inst:
     jsr lcd_wait
     sta PORTB
-    lda #0
-    sta PORTA
+    stz PORTA
     lda #LCD_EN
     sta PORTA
-    lda #0
-    sta PORTA
+    stz PORTA
     rts
 
 print_char:
@@ -79,9 +76,9 @@ print_char:
     sta PORTB
     lda #LCD_RS
     sta PORTA
-    lda #(LCD_RS | LCD_EN)
+    ora #LCD_EN
     sta PORTA
-    lda #LCD_RS
+    and #LCD_RS
     sta PORTA
     rts
 
