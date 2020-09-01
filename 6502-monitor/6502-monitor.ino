@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <SoftwareSerial.h>
 #include "Adafruit_MCP23017.h"
 #include "Adafruit_MCP23008.h"
 Adafruit_MCP23017 ADDR;
@@ -28,11 +29,12 @@ const char opcodeMatrix[256][5] = {\
 #define READ_WRITE 5
 #define LED 13
 #define SYNC 9
-
+SoftwareSerial aciaSerial(MISO, MOSI);
 void setup() {
   ADDR.begin(0);
   DATA.begin(1);
-  Serial.begin(57600);
+  Serial.begin(9600);
+  aciaSerial.begin(19200);
   for (int n = 0; n < 16; n++) {
     ADDR.pinMode(n, INPUT);
   }
@@ -51,6 +53,11 @@ void onClock() {
 }
 
 void loop(){
+  if (aciaSerial.available()){
+    char incoming = aciaSerial.read();
+    Serial.print(incoming);
+    aciaSerial.write("\n");
+  }
   if (clockFlag) {
     detachInterrupt(digitalPinToInterrupt(CLOCK));
     clockFlag = false;
