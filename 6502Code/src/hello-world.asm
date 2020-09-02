@@ -25,6 +25,7 @@ reset:
     lda #$0B ; no parity, no echo, no irq
     sta ACIA_CMD
     lda #$1F ; 1 stop bit, 8 data bits 19200 baud
+    sta ACIA_CNTL
     ; set up via
     lda #$FF ; port b all outputs
     sta DDRB
@@ -52,7 +53,7 @@ mainloop:
     ldx #0
 print_SER: 
     lda ACIA_STAT
-    ; wait ms txempty broken.
+    and #$10; wait ms txempty broken.
     beq print_SER
     lda message,x
     beq read_SER

@@ -1,0 +1,1 @@
+C:\Users\Owner\Documents\retroassembler\retroassembler.exe -L c:\Users\Owner\Documents\BE6502-Project\6502Code\src\hello-world.asm "wsl mnt/c/Users/Owner/Documents/BE6502-Project/x6502/x6502/ mnt/c/Users/Owner/Documents/BE6502-Project/6502Code/src/ {0}" 
