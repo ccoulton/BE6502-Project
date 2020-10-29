@@ -90,4 +90,5 @@ VIAINIT  LDA      #%11111111        ; set all PB to output
          RTI
 
 .org $fffc
-.word $8000
+.word RESET_VECTOR
+.word IRQ_VECTOR
