@@ -1,4 +1,5 @@
 ;.setting "HandleLongBranch", true
+.org $FE00
 LASTOPENL   = $24
 LASTOPENH   = $25
 STOREADDRL  = $26
@@ -14,7 +15,7 @@ CRC         = $2F
 CRCCHK      = $30
 
 INBUF       = $0200
-CTLR_6551   = $5001
+CTLR_6551   = $5003
 DATA_6551   = $5000
 
 BSKEY  .ascii "\b"   ;Backspace ascii/arrowleft?
@@ -22,11 +23,10 @@ RETURN .ascii "\r"   ;
 ESCKEY      = $1b   
 PROMPT .ascii "\\"
 
-WozReset: .org $FE00
+WozReset:
     cld             ;clear decimal
-                    ;init 6551
-                    ;store in ctrl reg
     cli
+    acia_init()     ;init 6551
 SoftReset:
     lda #$9b
     ldy #$7f    ;   auto esc
@@ -54,11 +54,11 @@ Backspace:
     lda #BSKEY
     Echo()
 NextChar:
-    WaitChar()
+    wait_char()
     cmp #$60        ;is lowercase
-    bmi *+4         ;skip conversion
+    bmi NUC         ;skip conversion
     and #$5f        ;convert to uppercase
-    sta INBUF,y     ;store into inputbuffer
+NUC:sta INBUF,y     ;store into inputbuffer
     Echo()          ;print it
     cmp #RETURN     
     bne NotReturn   ;get more input
@@ -108,7 +108,7 @@ HexShift:
     dex
     bne HexShift    ;loop for next hex
     iny             ;advance text input
-    jmp NextHex     ;always taken jmp?
+    bne NextHex     ;always taken jmp? size
 NotHex:
     cpy YSAVE
     beq Escape
@@ -164,7 +164,7 @@ ExamineNext:
 Modulo8Check:           ;linefeed check could check any value?
     lda LASTOPENL       ;if address mod 8 = 0 start new line
     and #$07
-    jmp NextPrint       ;always taken jmp?
+    bpl NextPrint       ;always taken jmp?
 PrintByte:
     pha
     .loop 4
@@ -178,16 +178,13 @@ PrintHex:
     cmp #"9"+1          ;is decimal?
     blt Echo
     adc #6              ;add w/carry 6 to offset for a-f
-.function Echo() ;write to to the serial bus
-    bit CTLR_6551     ;has b7 cleared ;maybe use this for the lcd
-    bmi Echo
+.function Echo()        ;write to to the serial bus
+    lda CTLR_6551       ;has b7 cleared ;maybe use this for the lcd
+    and #$10
+    beq Echo
     sta DATA_6551     
 .endf                   ;return from sub
-.function WaitChar()
-    lda CTLR_6551
-    and #$01       ;check rx flag
-    beq WaitChar
-    lda DATA_6551
-.endf
 ActiveRun:
     jmp (LASTOPENL)
+    
+.include "serial.inc"

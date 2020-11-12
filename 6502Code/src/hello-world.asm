@@ -108,7 +108,6 @@ print_char:
     sta PORTA
     rts
 
-.include "wozmon.inc"
 .org $ffe4
 .word $0000 ;cop_isr_nat = 00ffe4
 .word $0000 ;brk_isr_nat = 00ffe6
