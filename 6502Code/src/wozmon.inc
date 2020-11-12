@@ -97,10 +97,9 @@ NextHex:
     cmp #$FA
     blt NotHex
 RotateHex:
-    asl             ;acc shift left 4
-    asl             ;rol 4
-    asl
-    asl
+    .loop 4
+        asl             ;acc shift left 4
+    .endloop
     ldx #4          ;number of shift
 HexShift:
     asl
@@ -121,7 +120,7 @@ NotHex:
     inc STOREADDRL
     bne NextItem
     inc STOREADDRH
-    jmp NextItem        ;label to fix long jump
+NTI:jmp NextItem        ;label to fix long jump
 RunCommand:
     jsr ActiveRun
     jmp SoftReset
@@ -157,9 +156,8 @@ ExamineNext:
     lda LASTOPENL
     cmp HEXPARSEL
     lda LASTOPENH
-    sbc HEXPARSEH
-    blt *+4                  ;bge NTI
-    jmp NextItem             ;there be more data to output!#longjump
+    sbc HEXPARSEH                  
+    bge NTI             ;there be more data to output!#longjump
     inc LASTOPENL
     bne Modulo8Check    ;No Carry
     inc LASTOPENH
