@@ -15,8 +15,6 @@ CRC         = $2F
 CRCCHK      = $30
 
 INBUF       = $0200
-CTLR_6551   = $5003
-DATA_6551   = $5000
 
 BSKEY  .ascii "\b"   ;Backspace ascii/arrowleft?
 RETURN .ascii "\r"   ;
@@ -49,16 +47,16 @@ GetLine:
 Backspace:
     dey             ;move text input
     bmi GetLine
-    lda #$A0
+    lda #$A0        ;space
     Echo()
-    lda #BSKEY
+    lda #BSKEY      ;delete char
     Echo()
 NextChar:
-    wait_char()
-    cmp #$60        ;is lowercase
-    bmi NUC         ;skip conversion
-    and #$5f        ;convert to uppercase
-NUC:sta INBUF,y     ;store into inputbuffer
+    acia_read()
+    ;cmp #$60        ;is lowercase
+    ;bmi UC          ;skip conversion
+    ;and #$5f        ;convert to uppercase
+UC: sta INBUF,y     ;store into inputbuffer
     Echo()          ;print it
     cmp #RETURN     
     bne NotReturn   ;get more input
@@ -165,6 +163,7 @@ Modulo8Check:           ;linefeed check could check any value?
     lda LASTOPENL       ;if address mod 8 = 0 start new line
     and #$07
     bpl NextPrint       ;always taken jmp?
+
 PrintByte:
     pha
     .loop 4
@@ -179,12 +178,9 @@ PrintHex:
     blt Echo
     adc #6              ;add w/carry 6 to offset for a-f
 .function Echo()        ;write to to the serial bus
-    lda CTLR_6551       ;has b7 cleared ;maybe use this for the lcd
-    and #$10
-    beq Echo
-    sta DATA_6551     
+    acia_write_sync()     
 .endf                   ;return from sub
 ActiveRun:
     jmp (LASTOPENL)
     
-.include "serial.inc"
+.include "../inc/serial.inc"

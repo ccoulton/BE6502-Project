@@ -1,14 +1,17 @@
-.align $100
-LASTOPENL   .org    $24
-LASTOPENH   .org    $25
-STOREADDRL  .org    $26
-STOREADDRH  .org    $27
-HEXPARSEL   .org    $28
-HEXPARSEH   .org    $29
-YSAVE       .org    $2A
+.target "6502"
 
-INBUF       .pc     $0200
-WOZMODE     .org    $2B ;$00=LastOpen, $7f= store, $AE Block examine 
+.org $ff00
+LASTOPENL   .equ    $24
+LASTOPENH   .equ    $25
+STOREADDRL  .equ    $26
+STOREADDRH  .equ    $27
+HEXPARSEL   .equ    $28
+HEXPARSEH   .equ    $29
+YSAVE       .equ    $2A
+WOZMODE     .equ    $2B ;$00=LastOpen, $7f= store, $AE Block examine 
+
+INBUF       .equ     $0200
+
 KEYIN       = $D010     ;PIA.A register
 KEYCNTRLREG = $D011     ;PIA.A ctrl register
 DISPLAYPORT = $D012     ;pia.b output reg
@@ -22,8 +25,6 @@ PROMPT .ascii "\\"
 WozReset:
     cld     ;clear decimal
     cli     ;clear interupt
-    ldx #$FF
-    txs     ;stack pointer
     ldy #$7F
     sty DISPLAYPORT
     lda #$A7
@@ -55,7 +56,7 @@ NextChar:
     cmp RETURN     
     bne NotReturn   ;get more input
 ;command finished
-    ldy #-1         ;reset text pointer
+    ldy #$ff        ;reset text pointer
     lda #0          ;default mode is examine
     tax
 SetStore:
@@ -69,8 +70,8 @@ NextItem:
     cmp RETURN
     beq GetLine
     cmp #"."
-    blt BlockSkip
-    beq SetMode
+    blt BlockSkip   ; if its not . or a char ignore it.
+    beq SetMode     ; char is . set the mode
     cmp #":"
     beq SetStore
     cmp #"R"
@@ -171,3 +172,7 @@ PrintHex:
     bmi Echo
     sta DISPLAYPORT     
 .endf                   ;return from sub
+.org $fffa
+NMI_VECT .word $0F00
+RST_VECT .word WozReset
+IRQ_VECT .word $0000
