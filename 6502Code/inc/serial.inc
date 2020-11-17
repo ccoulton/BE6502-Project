@@ -3,7 +3,7 @@
 * Assembled with RetroAssembler.
 **/
 
-ACIA_ADDR = $5000
+; ACIA_ADDR = $5000
 ACIA_DATA = ACIA_ADDR
 ACIA_STAT = ACIA_ADDR+1 ;read only
 ACIA_CMD  = ACIA_ADDR+2

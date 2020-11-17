@@ -1,32 +1,15 @@
 .target "65816"
 .setting "LaunchCommand", "wsl /mnt/c/Users/Owner/Documents/BE6502-Project/x6502/x6502 {0}"
 .memory "fill", $8000, $8000, $ea
-; Via register constants
-PORTB   = $6000
-PORTA   = $6001
-DDRB    = $6002
-DDRA    = $6003
-T1CL    = $6004
-T1CH    = $6005
-T1LL    = $6006
-T1LH    = $6007
-T2CL    = $6008
-T2CH    = $6009
-SHFREG  = $600A
-AUXCTR  = $600B ; 76 t1 ctr 5 t2 4-2 shft, pb, pa
-PERCTR  = $600C ; cb2ctr 7-5 cb1 4 ca2 3-1 ca1 0
-VIAIRQF = $600D
-VIAIRQE = $600E
+VIAADDR     = $6000
+.include "../inc/via-6022.inc"
+ACIA_ADDR   = $5000
+.include "../inc/serial.inc"
 
 factval = $0200
 value = $0202 ; 2 bytes
 mod10 = $0204 ; 2 bytes
 message = $0206 ; 6 bytes
-
-ACIA_DATA = $5000
-ACIA_STAT = $5001 ;read only
-ACIA_CMD  = $5002
-ACIA_CNTL = $5003
 
 LCD_EN  = $80
 LCD_RW  = $40
@@ -52,7 +35,7 @@ reset:
     lda #$38 ;set 8-bit mode 2line disp 5x8
     jsr lcd_inst
     lda #$0E ;LCD on; Cursor on; blink off
-    jsr lcd_inst
+    jsr lcd_inst ; EntryMode
     lda #$06 ; Inc and sht cursor; don't shift display
     jsr lcd_inst
     lda #$01 ; Clear display
@@ -127,22 +110,22 @@ waitloop:
 
 number: .word 1729
 
-;sets up timer on 6522 to trigger in 0xc000 cycles.
+;sets up timer on 6522 to trigger in 0x000e cycles.
 irqsetup:
     lda AUXCTR
-    and #$7F
-    ora #$40
+    and #$7F    ; mask aux 
+    ora #$40    ; continous on pb7 disable make sure to set $40
     sta AUXCTR
     lda #$0E
-    sta T1CL
+    sta TMR1CL
     lda #$00
-    sta T1CH
+    sta TMR1CH
     lda #$C0
-    sta VIAIRQE
+    sta VIAIRQE ; enable irq's and t1
     cli
     jmp waitloop
 isr:
-    bit T1CL ; clear irq source
+    bit TMR1CL ; clear irq source
     lda #$40
     sta VIAIRQE
     sei
@@ -176,8 +159,7 @@ lcdbusy:
     sta PORTA
     ora #LCD_EN
     sta PORTA
-    lda PORTB
-    and #$80
+    bit PORTB
     bne lcdbusy
 
     lda #LCD_RW
@@ -221,19 +203,19 @@ fact:
 	jsr fact
 	pla ; pull out previous value 
 	tax 
-	ldy factret
+	ldy factval
 factloop:
 	clc
 	tya
-	adc factret
-	sta factret
+	adc factval
+	sta factval
 	dex
 	cpx #$1
 	bpl factloop
 	rts
 ifxeqlt1:
     lda #$1
-	sta factret
+	sta factval
 	rts
     
 .org $ffe4
@@ -243,10 +225,10 @@ ifxeqlt1:
 .word $0000 ;nmi_isr_nat = 00ffea
 .word $eaea ;res         = 00ffec
 .word $0000 ;irq_isr_nat = 00ffee 
-.org  $fff4 ;irq vectors
+.dw $eaeaeaea
 .word $8000 ;cop_ISR_emu = 00fff4
 .word $eaea ;reserved    = 00fff6
 .word $8000 ;abt_ISR_emu = 00fff8
 .word $8000 ;nmi_ISR_emu = 00fffa
 .word reset ;rst         = 00fffc 
-.word isr ;cnt_isr     = 00fffe
+.word isr   ;cnt_isr     = 00fffe
