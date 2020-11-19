@@ -86,7 +86,7 @@ void loop(){
 
     sprintf(output, "%04x %c %02x instr:%4s", hexaddress, 
       digitalRead(READ_WRITE) ? 'r' : 'W', hexdata,
-      digitalRead(VDA&&VPA) ? opcodeMatrix[hexdata]:"EXE");
+      digitalRead(VDA)&&digitalRead(VPA) ? opcodeMatrix[hexdata]:"EXE");
     Serial.println(output);
     attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
   }
