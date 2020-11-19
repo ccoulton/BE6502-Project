@@ -68,3 +68,10 @@ VIAORA  = VIAADDR + 15  ;Port A w/ no handshake
  SRIRQ   = $04
  CA1IRQ  = $02
  CA2IRQ  = $01
+
+.macro via_init(PortADir=$ff, PortBDir=$ff)
+    lda #PortADir
+    sta DDRA
+    lda #PortBDir
+    sta DDRB
+.endmacro

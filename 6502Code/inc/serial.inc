@@ -63,8 +63,8 @@ DTR_TML_RDY = $01
 
 /* Transmit Acc on ACIA, and wait till it's done, Broken on WDC as TDRE is always high*/
 .macro acia_write_sync()
-    sta ACIA_DATA
     acia_txFin()
+    sta ACIA_DATA
 .endm
 
 //todo: for wdc set up 6522 timer pin for wait.

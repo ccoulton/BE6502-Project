@@ -37,3 +37,51 @@ FNCT2Line   = FNCTSET | $08
 FNCT5by10   = FNCTSET | $04
 ;FNCT5by8   = FNCTSET
 
+.macro lcd_init(Mode=$38, Input=$0E, Shift=$06)
+    lda #Mode ;set 8-bit mode 2line disp 5x8
+    jsr lcd_inst
+    lda #Input ;LCD on; Cursor on; blink off
+    jsr lcd_inst
+    lda #Shift ; Inc and sht cursor; don't shift display
+    jsr lcd_inst
+    lda #CLRDISPLAY ; Clear display
+    jsr lcd_inst
+.endm
+
+.function lcd_wait()
+    pha
+    stz DDRB
+@lcdbusy
+    lda #LCD_RW
+    sta PORTA
+    ora #LCD_EN
+    sta PORTA
+    bit PORTB
+    bne @lcdbusy
+
+    lda #LCD_RW
+    sta PORTA
+    lda #$ff
+    sta DDRB
+    pla
+.endfunction
+
+.function lcd_inst()
+    jsr lcd_wait
+    sta PORTB
+    stz PORTA
+    lda #LCD_EN
+    sta PORTA
+    stz PORTA
+.endfunction
+
+.function print_char()
+    jsr lcd_wait
+    sta PORTB
+    lda #LCD_RS
+    sta PORTA
+    ora #LCD_EN
+    sta PORTA
+    and #LCD_RS
+    sta PORTA
+.endfunction
