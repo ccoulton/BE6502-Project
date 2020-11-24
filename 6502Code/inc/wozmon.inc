@@ -1,30 +1,30 @@
 ;.setting "HandleLongBranch", true
 .org $FE00
-LASTOPENL   = $24
-LASTOPENH   = $25
-STOREADDRL  = $26
-STOREADDRH  = $27
-HEXPARSEL   = $28
-HEXPARSEH   = $29
-YSAVE       = $2A
-WOZMODE     = $2B ;$00=LastOpen, $7f= store, $AE Block examine 
-MSGL        = $2C
-MSGH        = $2D
-CONTER      = $2E
-CRC         = $2F
-CRCCHK      = $30
+LASTOPENL   = $0024 ;xaml
+LASTOPENH   = $0025 ;xaml high
+STOREADDRL  = $0026
+STOREADDRH  = $0027
+HEXPARSEL   = $0028
+HEXPARSEH   = $0029
+YSAVE       = $002A
+WOZMODE     = $002B ;$00=LastOpen, $7f= store, $AE Block examine 
 
-INBUF       = $0200
+INBUF       = $0200 ; input buffer $027f
 
-BSKEY  .ascii "\b"   ;Backspace ascii/arrowleft?
-RETURN .ascii "\r"   ;
-ESCKEY      = $1b   
-PROMPT .ascii "\\"
+BSKEY       = $08   ;Backspace ascii/arrowleft?
+DELKEY      = $7f   ;delete key
+RETURN      = $0D   ; \r
+NEWLINE     = $0A   ; \n
+ESCKEY      = $1b   ; escape char
+PROMPT      = $5c   ; \ character
+COLON       = $3A   ; : character
+DOT         = $2E   ; . character
+SPKEY       = $20   ; space character
 
 WozReset:
     cld             ;clear decimal
     cli
-    acia_init()     ;init 6551
+    ;acia_init()     ;init 6551
 SoftReset:
     lda #$9b
     ldy #$7f    ;   auto esc
@@ -47,7 +47,7 @@ GetLine:
 Backspace:
     dey             ;move text input
     bmi GetLine
-    lda #$A0        ;space
+    lda #$20        ;space
     Echo()
     lda #BSKEY      ;delete char
     Echo()
@@ -74,12 +74,12 @@ NextItem:
     lda INBUF,y     ;get next char
     cmp #RETURN
     beq GetLine
-    cmp #"."
+    cmp #DOT        ;"."
     blt BlockSkip
     beq SetMode
-    cmp #":"
+    cmp #COLON        ;":"
     beq SetStore
-    cmp #"R"
+    cmp #$52        ;"R"
     beq RunCommand  ;run stored program
     ;cmp #$CC        ;#lcmd
     ;beq LOADINT
@@ -142,10 +142,10 @@ NextPrint:
     jsr PrintByte
     lda LASTOPENL
     jsr PrintByte
-    lda #':'
+    lda #COLON
     Echo()
 PrintData:
-    lda #" "
+    lda #SPKEY
     Echo()
     lda (LASTOPENL,x)
     jsr PrintByte
@@ -182,5 +182,3 @@ PrintHex:
 .endf                   ;return from sub
 ActiveRun:
     jmp (LASTOPENL)
-    
-.include "../inc/serial.inc"

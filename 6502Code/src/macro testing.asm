@@ -15,28 +15,14 @@ reset:
     via_init($E0)
     lcd_init()
 
-    ldx #0
-printloop:
-    lda message,x
-    beq main
-    jsr print_char
-    inx
-    jmp printloop
-
 main:
     ldx #0
-@serial
-    lda message,x
-    acia_write_sync()
-    inx
-    jmp @serial
-    acia_read()
-    jmp main
+    jmp WozReset
 
-message: .asciiz "Hello, World!\r\n"
 .include "../inc/serial.inc"
 .include "../inc/via-6022.inc"
 .include "../inc/lcd.inc"
+.include "../inc/wozmon.inc"
 .org $ffe4
 .word $0000 ;cop_isr_nat = 00ffe4
 .word $0000 ;brk_isr_nat = 00ffe6

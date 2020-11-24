@@ -32,9 +32,11 @@ const char opcodeMatrix[256][5] = {\
 #define RDY 10
 #define IRQ 11
 #define VPA 12
-SoftwareSerial aciaSerial(MOSI, MISO);
-char buffer[20];
-int bufidx = 0;
+SoftwareSerial aciaSerial(MOSI, MISO); //rx, tx
+char aciabuffer[127];
+int aciabufidx = 0;
+char serialBuf[127];
+int serialIdx = 0;
 void setup() {
   ADDR.begin((uint8_t)0);
   DATA.begin((uint8_t)1);
@@ -54,7 +56,7 @@ void setup() {
   pinMode(RDY, OUTPUT);
   //digitalWrite(RDY, HIGH);
   pinMode(IRQ, INPUT);
-  attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
+  //attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
 }
 
 void onClock() {
@@ -63,17 +65,17 @@ void onClock() {
 
 void loop(){
   if (aciaSerial.available()){
-    char incoming = aciaSerial.read();
-    buffer[bufidx++] = incoming;
-    if (incoming == 0x0a) {
-      //digitalWrite(RDY, LOW);
-      Serial.println(buffer);
-      while(!Serial.available()){
-        delay(1000);
-      }
-      aciaSerial.write(Serial.read());
-      //digitalWrite(RDY, HIGH);
+    uint8_t incoming = aciaSerial.read();
+    if ((char)incoming == '\r') {
+      Serial.println("");
     }
+    Serial.print((char)incoming);
+  }
+  if (Serial.available()){
+    uint8_t incoming = Serial.read();
+    if ((char)incoming != '\n'){
+      aciaSerial.write((char)incoming);
+    } 
   }
   if (clockFlag) {
     detachInterrupt(digitalPinToInterrupt(CLOCK));
