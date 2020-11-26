@@ -24,10 +24,10 @@ SPKEY       = $20   ; space character
 WozReset:
     cld             ;clear decimal
     cli
-    ;acia_init()     ;init 6551
-SoftReset:
-    lda #ESCKEY
-    ldy #$7f        ;triggers next char jump @37
+    acia_init()     ;init 6551
+    ldy #$7f
+;SoftReset:
+;    lda #ESCKEY
 NotReturn:
     cmp #BSKEY
     beq Backspace
@@ -47,14 +47,14 @@ GetLine:
 Backspace:
     dey             ;move text input
     bmi GetLine
-    lda #SPKEY      ;space
-    Echo()
-    lda #BSKEY      ;delete char
-    Echo()
+    ;lda #SPKEY      ;space
+    ;Echo()
+    ;lda #BSKEY      ;delete char
+    ;Echo()
 NextChar:
-    acia_read()
-    ;cmp #$60        ;is lowercase
-    ;bmi UC          ;skip conversion
+    acia_read()     ;$B7 == 1?
+    ;cmp #$60        ;is lowercase a = $61
+    ;bmi UC          ;skip conversion already less than
     ;and #$5f        ;convert to uppercase
 UC: sta INBUF,y     ;store into inputbuffer
     Echo()          ;print it
@@ -65,7 +65,7 @@ UC: sta INBUF,y     ;store into inputbuffer
     lda #$00        ;default mode is examine
     tax
 SetStore:
-    asl             ;leaves $7b in stor?
+    asl             ;leaves $74 in stor?
 SetMode:
     sta WOZMODE     ; set mode flags
 BlockSkip:
@@ -75,7 +75,7 @@ NextItem:
     cmp #RETURN
     beq GetLine     ;finished
     cmp #DOT        ;"."
-    blt BlockSkip
+    blt BlockSkip   ;skip anything under "."
     beq SetMode
     cmp #COLON      ;":"
     beq SetStore
@@ -87,12 +87,12 @@ NextItem:
     stx HEXPARSEH
     sty YSAVE       ;save y for compare
 NextHex:
-    lda INBUF,y
-    xor #$60
-    cmp #10        ;compare for decimal y not 10?
+    lda INBUF,y     ;A = $41, F = #$46 0 = $30-$39
+    xor #$30        ;subtract $30 basically
+    cmp #10         ;compare for decimal y not 10?
     blt RotateHex
-    adc #$08
-    cmp #$7A
+    adc #$89       
+    cmp #$7A        ;map to $FA - FF
     blt NotHex
 RotateHex:
     .loop 4
@@ -170,7 +170,7 @@ PrintByte:
     pla
 PrintHex:
     and #$0f            ;mask LSB
-    ora #$30
+    ora #$0
     cmp #$3a          ;is decimal?
     blt Echo
     adc #6              ;add w/carry 6 to offset for a-f
