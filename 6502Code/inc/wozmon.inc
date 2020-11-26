@@ -26,28 +26,28 @@ WozReset:
     cli
     ;acia_init()     ;init 6551
 SoftReset:
-    lda #$9b
-    ldy #$7f    ;   auto esc
+    lda #ESCKEY
+    ldy #$7f        ;triggers next char jump @37
 NotReturn:
     cmp #BSKEY
     beq Backspace
     cmp #ESCKEY
     beq Escape
     iny
-    bpl NextChar
+    bpl NextChar    ;auto esc if y >127 $7f
 Escape:
     lda #PROMPT     ;print prompt char
-    Echo()         ;call echo sub
+    Echo()          ;call echo sub
 GetLine:
     lda #RETURN     ;print newline
-    Echo()         ;call display print
-    lda #PROMPT
-    Echo()
+    Echo()          ;call display print
+    ;lda #PROMPT
+    ;Echo()
     ldy #$01        ;start new input line
 Backspace:
     dey             ;move text input
     bmi GetLine
-    lda #$20        ;space
+    lda #SPKEY      ;space
     Echo()
     lda #BSKEY      ;delete char
     Echo()
@@ -73,32 +73,32 @@ BlockSkip:
 NextItem:
     lda INBUF,y     ;get next char
     cmp #RETURN
-    beq GetLine
+    beq GetLine     ;finished
     cmp #DOT        ;"."
     blt BlockSkip
     beq SetMode
-    cmp #COLON        ;":"
+    cmp #COLON      ;":"
     beq SetStore
     cmp #$52        ;"R"
     beq RunCommand  ;run stored program
-    ;cmp #$CC        ;#lcmd
+    ;cmp #$4C        ;#lcmd
     ;beq LOADINT
     stx HEXPARSEL   ;clear input values
     stx HEXPARSEH
     sty YSAVE       ;save y for compare
 NextHex:
     lda INBUF,y
-    xor #$B0
-    cmp #9+1        ;compare for decimal y not 10?
+    xor #$60
+    cmp #10        ;compare for decimal y not 10?
     blt RotateHex
-    adc #$88
-    cmp #$FA
+    adc #$08
+    cmp #$7A
     blt NotHex
 RotateHex:
     .loop 4
         asl             ;acc shift left 4
     .endloop
-    ldx #4          ;number of shift
+    ldx #$04          ;number of shift
 HexShift:
     asl
     rol HEXPARSEL
@@ -120,11 +120,9 @@ NotHex:
     inc STOREADDRH
 NTI:jmp NextItem        ;label to fix long jump
 RunCommand:
-    jsr ActiveRun
-    jmp SoftReset
-    ;LOADINT:
-    ;    jsr LoadIntel
-    ;    jmp SoftReset
+    jmp (LASTOPENL)
+    ;jsr ActiveRun
+    ;jmp SoftReset
 NotStore:
     bmi ExamineNext
     ldx #2
@@ -154,16 +152,15 @@ ExamineNext:
     lda LASTOPENL
     cmp HEXPARSEL
     lda LASTOPENH
-    sbc HEXPARSEH                  
+    sbc HEXPARSEH
     bge NTI             ;there be more data to output!#longjump
     inc LASTOPENL
-    bne Modulo8Check    ;No Carry
+    bne Mod8Check       ;No Carry
     inc LASTOPENH
-Modulo8Check:           ;linefeed check could check any value?
+Mod8Check:
     lda LASTOPENL       ;if address mod 8 = 0 start new line
-    and #$07
+    and #$0F
     bpl NextPrint       ;always taken jmp?
-
 PrintByte:
     pha
     .loop 4
@@ -173,12 +170,12 @@ PrintByte:
     pla
 PrintHex:
     and #$0f            ;mask LSB
-    ora #"0"
-    cmp #"9"+1          ;is decimal?
+    ora #$30
+    cmp #$3a          ;is decimal?
     blt Echo
     adc #6              ;add w/carry 6 to offset for a-f
 .function Echo()        ;write to to the serial bus
     acia_write_sync()     
 .endf                   ;return from sub
-ActiveRun:
-    jmp (LASTOPENL)
+;ActiveRun:
+;    jmp (LASTOPENL)

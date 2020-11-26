@@ -35,8 +35,6 @@ const char opcodeMatrix[256][5] = {\
 SoftwareSerial aciaSerial(MOSI, MISO); //rx, tx
 char aciabuffer[127];
 int aciabufidx = 0;
-char serialBuf[127];
-int serialIdx = 0;
 void setup() {
   ADDR.begin((uint8_t)0);
   DATA.begin((uint8_t)1);
@@ -75,7 +73,7 @@ void loop(){
     uint8_t incoming = Serial.read();
     if ((char)incoming != '\n'){
       aciaSerial.write((char)incoming);
-    } 
+    }
   }
   if (clockFlag) {
     detachInterrupt(digitalPinToInterrupt(CLOCK));

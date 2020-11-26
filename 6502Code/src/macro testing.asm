@@ -1,4 +1,6 @@
 .target "65816"
+.setting "ShowLabelsAfterCompiling",true
+.setting "OmitUnusedFunctions",true
 .memory "fill", $8000, $8000, $ea
 ACIA_ADDR = $5000
 VIAADDR   = $6000
@@ -12,8 +14,8 @@ reset:
     ldx #$ff
     txs
     acia_init()
-    via_init($E0)
-    lcd_init()
+    ;via_init($E0)
+    ;lcd_init()
 
 main:
     ldx #0
