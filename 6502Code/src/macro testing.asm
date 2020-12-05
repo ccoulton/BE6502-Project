@@ -2,8 +2,8 @@
 .setting "ShowLabelsAfterCompiling",true
 .setting "OmitUnusedFunctions",true
 .memory "fill", $8000, $8000, $ea
-ACIA_ADDR = $5000
-VIAADDR   = $6000
+ACIA_ADDR = $7f90
+VIAADDR   = $7f80
 LCD_EN  = $80
 LCD_RW  = $40
 LCD_RS  = $20

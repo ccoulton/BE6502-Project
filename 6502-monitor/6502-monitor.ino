@@ -54,7 +54,7 @@ void setup() {
   pinMode(RDY, OUTPUT);
   //digitalWrite(RDY, HIGH);
   pinMode(IRQ, INPUT);
-  //attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
+  attachInterrupt(digitalPinToInterrupt(CLOCK), onClock, RISING);
 }
 
 void onClock() {

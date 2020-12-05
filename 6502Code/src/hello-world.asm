@@ -1,15 +1,15 @@
 .target "65816"
 .setting "LaunchCommand", "wsl /mnt/c/Users/Owner/Documents/BE6502-Project/x6502/x6502 {0}"
 .memory "fill", $8000, $8000, $ea
-PORTB   = $6000
-PORTA   = $6001
-DDRB    = $6002
-DDRA    = $6003
+PORTB   = $7f80
+PORTA   = $7f81
+DDRB    = $7f82
+DDRA    = $7f83
 
-ACIA_DATA = $5000
-ACIA_STAT = $5001 ;read only
-ACIA_CMD  = $5002
-ACIA_CNTL = $5003
+ACIA_DATA = $7f90
+ACIA_STAT = $7f91 ;read only
+ACIA_CMD  = $7f92
+ACIA_CNTL = $7f93
 
 LCD_EN  = $80
 LCD_RW  = $40
