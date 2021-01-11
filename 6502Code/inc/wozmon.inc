@@ -25,9 +25,8 @@ WozReset:
     cld             ;clear decimal
     cli
     acia_init()     ;init 6551
-    ldy #$7f
-;SoftReset:
-;    lda #ESCKEY
+SoftReset:
+    lda #ESCKEY
 NotReturn:
     cmp #BSKEY
     beq Backspace
@@ -64,8 +63,8 @@ UC: sta INBUF,y     ;store into inputbuffer
     ldy #$FF        ;reset text pointer
     lda #$00        ;default mode is examine
     tax
-SetStore:
-    asl             ;leaves $74 in stor?
+SetStore:           ; $3A with the top bit pulled off
+    asl             ; colon asl is $74 originally $BA->$75
 SetMode:
     sta WOZMODE     ; set mode flags
 BlockSkip:
@@ -76,9 +75,9 @@ NextItem:
     beq GetLine     ;finished
     cmp #DOT        ;"."
     blt BlockSkip   ;skip anything under "."
-    beq SetMode
+    beq SetMode     ; if dot set mode
     cmp #COLON      ;":"
-    beq SetStore
+    beq SetStore    ; store values after colon
     cmp #$52        ;"R"
     beq RunCommand  ;run stored program
     ;cmp #$4C        ;#lcmd
@@ -89,7 +88,7 @@ NextItem:
 NextHex:
     lda INBUF,y     ;A = $41, F = #$46 0 = $30-$39
     xor #$30        ;subtract $30 basically
-    cmp #10         ;compare for decimal y not 10?
+    cmp #10         ;compare for decimal
     blt RotateHex
     adc #$89       
     cmp #$7A        ;map to $FA - FF
@@ -170,12 +169,13 @@ PrintByte:
     pla
 PrintHex:
     and #$0f            ;mask LSB
-    ora #$0
+    ora #$30            ;convert to ascii
     cmp #$3a          ;is decimal?
     blt Echo
-    adc #6              ;add w/carry 6 to offset for a-f
+    adc #7              ;add w/carry 7 to offset for a-f 3a->3f to 41->46
 .function Echo()        ;write to to the serial bus
-    acia_write_sync()     
+    acia_write_sync()
+    ;print_char()  
 .endf                   ;return from sub
 ;ActiveRun:
 ;    jmp (LASTOPENL)

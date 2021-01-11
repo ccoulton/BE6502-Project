@@ -11,15 +11,15 @@ LCD_RS  = $20
 .org $8000
 
 reset:
-    ;ldx #$ff
-    ;txs
+    ldx #$ff
+    txs
     ;acia_init()
     ;via_init($E0)
     ;lcd_init()
 
 main:
     ;ldx #0
-    ;jmp WozReset
+    jmp WozReset
 
 .include "../inc/serial.inc"
 .include "../inc/via-6022.inc"
@@ -37,5 +37,5 @@ main:
 .word $eaea ;reserved    = 00fff6
 .word $8000 ;abt_ISR_emu = 00fff8
 .word $8000 ;nmi_ISR_emu = 00fffa
-.word WozReset ;rst         = 00fffc 
+.word reset ;rst         = 00fffc 
 .word $8000 ;cnt_isr     = 00fffe
