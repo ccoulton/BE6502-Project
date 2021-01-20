@@ -1,11 +1,12 @@
 #include <Arduino.h>
-#define SPI_DATA 22
-#define SPI_CLOCK 13
-#include <FastLED.h>
+#include <WiFi.h>
 #include <Wire.h>
 #include <pins_arduino.h>
 #include "Adafruit_MCP23017.h"
 #include "Adafruit_MCP23008.h"
+#define FASTLED_INTERNAL
+#include <FastLED.h>
+#undef FASTLED_INTERNAL
 Adafruit_MCP23017 ADDR;
 Adafruit_MCP23008 DATA;
 Adafruit_MCP23008 CNTR;
@@ -29,19 +30,68 @@ const char opcodeMatrix[256][5] = {\
         "BNE", "CMP", "CMP", "CMP", "PEI", "CMP", "DEC", "SMB5", "CLD", "CMP", "PHX", "STP", "JML", "CMP", "DEC", "BBS5",\
         "CPX", "SBC", "SEP", "SBC", "CPX", "SBC", "INC", "SMB6", "INX", "SBC", "NOP", "XBA", "CPX", "SBC", "INC", "BBS6",\
         "BEQ", "SBC", "SBC", "SBC", "PEA", "SBC", "INC", "SMB7", "SED", "SBC", "PLX", "XCE", "JSR", "SBC", "INC", "BBS7"};
-void onClock();
+void onClock() {
+  clockFlag = true;
+  CNTR.readGPIO();
+};
+void IrcBotTask(void* parameters);
+void DebuggerTask(void* parameters);
 
 #define CLOCK 25 //interupt pin though optocouple
-#define SPI
-//char aciabuffer[127];
-//int aciabufidx = 0;
 void setup() {
-  ADDR.begin((uint8_t)0);
-  DATA.begin((uint8_t)1);
-  CNTR.begin((uint8_t)2);
-  Serial.begin(115200);
-  Serial1.begin(19200);
+  Serial.begin(115200); //USB moniter
+  //arduino defaults to core 1 
+  xTaskCreatePinnedToCore(DebuggerTask, "6502 Debugger", 1000, NULL, 1, NULL, 1);
+  //put wifi on core 0 
+  xTaskCreatePinnedToCore(IrcBotTask,   "IrcBot", 1000, NULL, 1, NULL, 0);
+}
+
+void IrcBotTask(void* parameters) {
+  //setup for the wifi task
+  Serial1.begin(19200); //6551 ACIA
+  //Led setup
   FastLED.addLeds<WS2812, BUILTIN_LED, GRB>(&led, 1);
+  pinMode(BUILTIN_LED, OUTPUT);
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  Serial.println("Wifi Setup Done.");
+  while(true) {
+    int n = WiFi.scanNetworks();
+    if (n == 0) {
+      Serial.println("No Networks found.");
+    } else {
+      Serial.printf("%d Networks Found!\n", n);
+      for (int index = 0; index < n; index++) {
+        Serial.printf("%d: %s (%d)\n", 
+          index+1, WiFi.SSID(index).c_str(), 
+          WiFi.RSSI(index));
+        delay(10);
+      }
+    }
+    led = CRGB::OrangeRed;
+    FastLED.show();
+    delay(1000);
+    led = CRGB::Blue;
+    FastLED.show();
+    delay(1000);
+    led = CRGB::Aqua;
+    FastLED.show();
+    delay(1000);
+    led = CRGB::Green;
+    FastLED.show();
+    delay(1000);
+    led = CRGB::Black;
+    FastLED.show();
+    delay(1000);
+  }
+}
+
+void DebuggerTask(void* parameters) {
+  //init the i2c debugger
+  ADDR.begin((uint8_t)0); //0x20
+  DATA.begin((uint8_t)1); //0x21
+  CNTR.begin((uint8_t)2); //0x22
 
   for (int n = 0; n < 16; n++) {
     ADDR.pinMode(n, INPUT);
@@ -54,49 +104,29 @@ void setup() {
   byte buff = 0x01;
   Wire.writeTransmission(MCP23008_GPINTEN, &buff, 1); //set irq from mcp23008 on pin 0 or clock
   Wire.endTransmission();
-  //Wire.writeTransmission(mc);
   pinMode(CLOCK, INPUT);
-  pinMode(BUILTIN_LED, OUTPUT);
+  //arduino code always runs on core 1 so this is pinned there. perfect.
   attachInterrupt(CLOCK, onClock, RISING);
-}
+  for (;;){ //replacement for arduino loop
+    if (clockFlag) {
+      detachInterrupt(CLOCK);
+      clockFlag = false;
+      char output[25];
 
-void onClock() {
-  clockFlag = true;
-  CNTR.readGPIO();
-}
+      uint16_t hexaddress = ADDR.readGPIOAB();
 
-void loop(){
-#if 0
-  if (Serial1.available()){
-    uint8_t incoming = Serial1.read();
-    if ((char)incoming == '\r') {
-      Serial.println("");
-    }
-    Serial.print((char)incoming);
-  }
-  if (Serial.available()){
-    uint8_t incoming = Serial.read();
-    if ((char)incoming != '\n'){
-      Serial1.write((char)incoming);
+      uint8_t hexdata = DATA.readGPIO();
+      bool rwb = CNTR.digitalRead(1);
+      bool vda = CNTR.digitalRead(2);
+      bool vpa = CNTR.digitalRead(3);
+
+      sprintf(output, "%04x %c %02x instr:%4s", hexaddress, 
+        rwb ? 'r' : 'W', hexdata,
+        (vda&&vpa) ? opcodeMatrix[hexdata]:"EXE");
+      Serial.println(output);
+      attachInterrupt(CLOCK, onClock, RISING);
     }
   }
-#endif
-  if (clockFlag) {
-    detachInterrupt(CLOCK);
-    clockFlag = false;
-    char output[25];
-
-    uint16_t hexaddress = ADDR.readGPIOAB();
-
-    uint8_t hexdata = DATA.readGPIO();
-    bool rwb = CNTR.digitalRead(1);
-    bool vda = CNTR.digitalRead(2);
-    bool vpa = CNTR.digitalRead(3);
-
-    sprintf(output, "%04x %c %02x instr:%4s", hexaddress, 
-      rwb ? 'r' : 'W', hexdata,
-      (vda&&vpa) ? opcodeMatrix[hexdata]:"EXE");
-    Serial.println(output);
-    attachInterrupt(CLOCK, onClock, RISING);
-  }
 }
+
+void loop(){}
