@@ -8,7 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "c:/Users/Owner/Documents/BE6502-Project/pycom/include",
+                "c:/Users/Owner/Documents/BE6502-Project/pycom/.pio/libdeps",
+                "c:/Users/Owner/Documents/BE6502-Project/pycom/inc",
                 "c:/Users/Owner/Documents/BE6502-Project/pycom",
                 "C:/Users/Owner/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/config",
                 "C:/Users/Owner/.platformio/packages/framework-arduinoespressif32/tools/sdk/include/app_trace",
