@@ -2,7 +2,9 @@
 #define _6502_MONITOR_H_
 
 #define CLOCK 25 //interupt pin though optocouple
-
+extern Adafruit_MCP23017 ADDR;
+extern Adafruit_MCP23008 DATA;
+extern Adafruit_MCP23008 CNTR;
 const char opcodeMatrix[256][5] = {\
         "BRK", "ORA", "COP", "ORA", "TSB", "ORA", "ASL", "RMB0", "PHP", "ORA", "ASL", "PHD", "TSB", "ORA", "ASL", "BBR0",\
         "BPL", "ORA", "ORA", "ORA", "TRB", "ORA", "ASL", "RMB1", "CLC", "ORA", "INC", "TCS", "TRB", "ORA", "ASL", "BBR1",\

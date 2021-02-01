@@ -1,11 +1,32 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include "..\inc\IrcBot.h"
-#include "..\inc\auth.h"
 #define FASTLED_INTERNAL
 #include <FastLED.h>
 #undef FASTLED_INTERNAL
+#include "..\inc\IrcBot.h"
+#include "..\inc\auth.h"
 CRGB led;
+static WiFiClient client;
+
+static char *get_command(char line[]) {
+    char *command = (char*) malloc(512);
+    char clone[512];
+    strncpy(clone, line, strlen(line)+1);
+    char *splitted = strtok(clone, " ");
+    if (splitted != NULL){
+        if (splitted[0] == ':'){
+            splitted = strtok(NULL, " ");
+        }
+        if (splitted != NULL){
+            strncpy(command, splitted, strlen(splitted)+1);
+        }else{
+            command[0] = '\0';
+        }
+    }else{
+        command[0] = '\0';
+    }
+    return command;
+}
 
 inline void scanNetworks() {
     Serial.println("Scan Start");
@@ -40,24 +61,23 @@ inline void scanNetworks() {
 
 void connectToKnownNetworks() {
     int loops;
-    //scanNetworks();
     for (int index = 0; index < 4; index++) {
-        loops = 10;
+        loops = 20;
+        Serial.print("Trying to connect to ");
+        Serial.println(KNOWN_NETWORKS[index].ssid);
         WiFi.begin(KNOWN_NETWORKS[index].ssid, KNOWN_NETWORKS[index].pwd);
-        while ((WiFi.status() != WL_CONNECTED) &&  (--loops > 0)) {
-            if (WiFi.status() != WL_CONNECT_FAILED) {
-                break;
-            } else {
-                delay(500);
-                Serial.print(".");
-            }
+        while ((WiFi.status() != WL_CONNECTED) && (loops-- > 0)){
+            delay(500);
+            Serial.print(".");
         }
-        if (loops > 0){
-            Serial.printf("\nWifi Connected:\n");
+        Serial.println("");
+        if (WiFi.status() == WL_CONNECTED){
+            Serial.println("Wifi Connected!");
+            //Serial.println(WiFi.)
             Serial.print("Ip Address: ");
             Serial.println(WiFi.localIP());
-            break;
-        } else if (WiFi.status() == WL_CONNECT_FAILED) {
+            index = 4;
+        } else if (loops == 0) {
             Serial.println("Could not connect to network in time.");
             Serial.println("Trying next Network in Known Networks.");
             continue;
@@ -69,20 +89,46 @@ void connectToKnownNetworks() {
 #https://dev.twitch.tv/docs/client/guide
 #ws://irc-ws.chat.twitch.tv:80
 */
+void send_message(const char *msg) {
+    char msg_pkt[512];
+    sprintf(msg_pkt, "PRIVMSG %s :%s\r\n", CHANNEL, msg);
+    client.write(msg_pkt, strlen(msg_pkt));
+}
+
+void send_Data(const char *cmd, const char *msg){
+    char msg_pkt[512];
+    sprintf(msg_pkt, "%s%s\r\n", cmd, msg);
+    client.write(msg_pkt);
+}
+
 void IrcBotTask(void* parameters) {
-    //setup for the wifi task
-    Serial1.begin(19200); //6551 ACIA
-    (void)TOKEN;
-    //Led setup
-    FastLED.addLeds<WS2812, BUILTIN_LED, GRB>(&led, 1);
-    pinMode(BUILTIN_LED, OUTPUT);
-    WiFiClient client;
     if (!client.connect(SERVER, PORT)) {
-        //connection failed;
+        Serial.println("Connection failed.");
         return;
     }
-    
-    while(true) {
-    //scanNetworks();
+    send_Data("PASS ", TOKEN);
+    send_Data("NICK ", NICK);
+    char *userString = new char[27];
+    sprintf(userString, "User %s 0 * :", BOTOWNER);
+    send_Data(userString, BOTOWNER);
+    free(userString);
+    send_Data("JOIN ", CHANNEL);
+    while(1) {
+        char line[512];
+        if (client.available()){
+            client.readBytes(line, 512);
+            //char *prefix = get_prefix(line);
+            //char *userName = get_userName(line);
+            char *command = get_command(line);
+            //char *argument = get_Last_arg(line);
+            if (strcmp(command, "PING") == 0) {
+                send_Data("PONG :", "tmi.twitch.tv"); //argument.
+                send_message("Bot: Hey Thanks for hanging out.");
+            } else if(strcmp(command, "PRIVMSG") == 0) { // 
+
+            } else if(strcmp(command, "JOIN") == 0) { //user name has joined!
+
+            } else { /* Reserved */ }
+        }
     }
 }
