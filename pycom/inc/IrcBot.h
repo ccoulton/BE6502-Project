@@ -3,6 +3,7 @@
 
 extern CRGB led;
 void connectToKnownNetworks(void);
+void connectTwitch(void);
 void IrcBotTask(void* parameters);
 
 #endif

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Regexp.h>
 #include <WiFi.h>
 #define FASTLED_INTERNAL
 #include <FastLED.h>
@@ -7,26 +8,6 @@
 #include "..\inc\auth.h"
 CRGB led;
 static WiFiClient client;
-
-static char *get_command(char line[]) {
-    char *command = (char*) malloc(512);
-    char clone[512];
-    strncpy(clone, line, strlen(line)+1);
-    char *splitted = strtok(clone, " ");
-    if (splitted != NULL){
-        if (splitted[0] == ':'){
-            splitted = strtok(NULL, " ");
-        }
-        if (splitted != NULL){
-            strncpy(command, splitted, strlen(splitted)+1);
-        }else{
-            command[0] = '\0';
-        }
-    }else{
-        command[0] = '\0';
-    }
-    return command;
-}
 
 inline void scanNetworks() {
     Serial.println("Scan Start");
@@ -61,7 +42,7 @@ inline void scanNetworks() {
 
 void connectToKnownNetworks() {
     int loops;
-    for (int index = 0; index < 4; index++) {
+    for (int index = 0; index < NETWORK_NUM; index++) {
         loops = 20;
         Serial.print("Trying to connect to ");
         Serial.println(KNOWN_NETWORKS[index].ssid);
@@ -101,11 +82,12 @@ void send_Data(const char *cmd, const char *msg){
     client.write(msg_pkt);
 }
 
-void IrcBotTask(void* parameters) {
+void connectTwitch(void) {
     if (!client.connect(SERVER, PORT)) {
         Serial.println("Connection failed.");
         return;
     }
+    Serial.println("Connected to twitch?");
     send_Data("PASS ", TOKEN);
     send_Data("NICK ", NICK);
     char *userString = new char[27];
@@ -113,22 +95,46 @@ void IrcBotTask(void* parameters) {
     send_Data(userString, BOTOWNER);
     free(userString);
     send_Data("JOIN ", CHANNEL);
+}
+
+void IrcBotTask(void* parameters) {
+    MatchState ms;
+    char matchBuffer[44];
+    sprintf(matchBuffer, "%s %s :!*(.*)", ":(%w*)!.*%.tv (%u*)", CHANNEL);
     while(1) {
-        char line[512];
-        if (client.available()){
-            client.readBytes(line, 512);
-            //char *prefix = get_prefix(line);
-            //char *userName = get_userName(line);
-            char *command = get_command(line);
-            //char *argument = get_Last_arg(line);
-            if (strcmp(command, "PING") == 0) {
+        char *line = new char[512];
+        if (client.available()) {
+            size_t size;
+            int result;
+            size = client.readBytes(line, 512);
+            Serial.println(line);
+            ms.Target(line, size);
+            result = ms.Match(matchBuffer, 0);
+            if (strcmp(line, "PING") == 0) {
                 send_Data("PONG :", "tmi.twitch.tv"); //argument.
                 send_message("Bot: Hey Thanks for hanging out.");
-            } else if(strcmp(command, "PRIVMSG") == 0) { // 
-
-            } else if(strcmp(command, "JOIN") == 0) { //user name has joined!
-
-            } else { /* Reserved */ }
+            } else if(result) {
+                char username[26];
+                ms.GetCapture(username, 0);
+                char irccmd[10];
+                ms.GetCapture(irccmd, 1); //join//etc
+                char command[10];
+                ms.GetCapture(command, 2);
+                //Serial.println(username); Serial.println(irccmd); Serial.println(command);
+                if (strcmp(irccmd, "PRIVMSG") == 0) {
+                    Serial.println(command);
+                    if (strcmp(command, "seen\0") == 0) {
+                        send_message("Bot: I see and Obey!");
+                    } else if (strcmp(command, "lurk") == 0) {
+                        send_message("Bot: Ok Enjoy your lurk.");
+                    }
+                } else if (strcmp(irccmd, "JOIN") == 0) {
+                    char joinMessage[60];
+                    sprintf(joinMessage, "Bot: Hello %s thanks for joining!", username);
+                    send_message(joinMessage);
+                }
+            }
         }
+        free(line);
     }
 }

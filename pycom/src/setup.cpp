@@ -27,7 +27,6 @@ sd dat0 2/p8, sclk 14/p23, cmd 15/p4
 void setup() {
     Serial.begin(115200); //USB moniter
     Serial1.begin(19200, SERIAL_8N1, 15, 4, false, 20000UL); //6551 ACIA
-    Serial.print("mode reset\n");
     //Setup for the wifi Task.
     connectToKnownNetworks();
     //Led setup
@@ -54,15 +53,13 @@ void setup() {
     //arduino code always runs on core 1 so this is pinned there. perfect.
     attachInterrupt(CLOCK, onClock, RISING);//*/
     //arduino defaults to core 1 
-    //xTaskCreatePinnedToCore(DebuggerTask, "6502 Debugger", 1000, NULL, 1, NULL, 1);
+    //xTaskCreatePinnedToCore(DebuggerTask, "6502 Debugger", 1000, NULL, 4, NULL, 1);
     //put wifi on core 0 
-    xTaskCreatePinnedToCore(IrcBotTask,   "IrcBot", 3000, NULL, 1, NULL, 0);
+    connectTwitch();
+    xTaskCreatePinnedToCore(IrcBotTask,   "IrcBot", 4000, NULL, 5, NULL, 0);
+    disableCore0WDT(); //deals with wdt fault on idle0?
 }
 
 void loop(){
-    if (Serial1.available()){
-        Serial.write(Serial1.read());
-    } else if (Serial.available()){
-        Serial1.write(Serial.read());
-    }
+    DebuggerTask(NULL);
 }

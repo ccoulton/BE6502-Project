@@ -1,3 +1,7 @@
 .pio
 .clang_complete
 .gcc-flags.json
+oauth.py
+.env
+\6502-master
+\krisos-master
