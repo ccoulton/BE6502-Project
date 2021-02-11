@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "6502Code"
+		},
+		{
+			"path": "6502-master"
 		}
 	],
 	"settings": {

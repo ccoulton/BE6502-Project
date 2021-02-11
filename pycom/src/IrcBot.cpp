@@ -13,15 +13,15 @@ inline void scanNetworks() {
     Serial.println("Scan Start");
     int n = WiFi.scanNetworks();
     if (n == 0) {
-      Serial.println("No Networks found.");
+        Serial.println("No Networks found.");
     } else {
-      Serial.printf("%d Networks Found!\n", n);
-      for (int index = 0; index < n; index++) {
-        Serial.printf("%d: %s (%d)\n", 
-          index+1, WiFi.SSID(index).c_str(), 
-          WiFi.RSSI(index));
-        delay(10);
-      }
+        Serial.printf("%d Networks Found!\n", n);
+        for (int index = 0; index < n; index++) {
+            Serial.printf("%d: %s (%d)\n", 
+                index+1, WiFi.SSID(index).c_str(), 
+                WiFi.RSSI(index));
+            delay(10);
+        }
     }
     led = CRGB::OrangeRed;
     FastLED.show();
@@ -54,7 +54,6 @@ void connectToKnownNetworks() {
         Serial.println("");
         if (WiFi.status() == WL_CONNECTED){
             Serial.println("Wifi Connected!");
-            //Serial.println(WiFi.)
             Serial.print("Ip Address: ");
             Serial.println(WiFi.localIP());
             index = 4;
@@ -99,8 +98,9 @@ void connectTwitch(void) {
 
 void IrcBotTask(void* parameters) {
     MatchState ms;
-    char matchBuffer[44];
-    sprintf(matchBuffer, "%s %s :!*(.*)", ":(%w*)!.*%.tv (%u*)", CHANNEL);
+    char matchBuffer[50];
+    sprintf(matchBuffer, "%s %s %s", 
+        ":(%w*)!.*%.tv (%u*)", CHANNEL, ":!(%a*)");
     while(1) {
         char *line = new char[512];
         if (client.available()) {
@@ -114,24 +114,36 @@ void IrcBotTask(void* parameters) {
                 send_Data("PONG :", "tmi.twitch.tv"); //argument.
                 send_message("Bot: Hey Thanks for hanging out.");
             } else if(result) {
+                char messageString[60];
                 char username[26];
-                ms.GetCapture(username, 0);
                 char irccmd[10];
-                ms.GetCapture(irccmd, 1); //join//etc
                 char command[10];
+                ms.GetCapture(username, 0);
+                ms.GetCapture(irccmd, 1); //join//etc
                 ms.GetCapture(command, 2);
-                //Serial.println(username); Serial.println(irccmd); Serial.println(command);
                 if (strcmp(irccmd, "PRIVMSG") == 0) {
-                    Serial.println(command);
-                    if (strcmp(command, "seen\0") == 0) {
+                    if (strcmp(command, "seen") == 0) {
                         send_message("Bot: I see and Obey!");
                     } else if (strcmp(command, "lurk") == 0) {
-                        send_message("Bot: Ok Enjoy your lurk.");
+                        sprintf(messageString, 
+                            "Bot: Ok %s Enjoy your lurk.", username);
+                        send_message(messageString);
+                    } else if (strcmp(command, "rgbled")) {
+                        if (ms.Match(":!rgbled 0x(%x*)", 0)) {
+                            ms.GetCapture(command, 0);
+                            led = strtoul(command, NULL, 16);
+                        } else if(ms.Match(":!rgbled help", 0)) {
+                            send_message("Bot: For defined RGB values check 
+                                https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors.");
+                        } else {
+                            sprintf(messageString, 
+                                "Bot: Sorry %s RGB was not correct try again.", username);
+                            send_message(messageString);
+                        }
                     }
                 } else if (strcmp(irccmd, "JOIN") == 0) {
-                    char joinMessage[60];
-                    sprintf(joinMessage, "Bot: Hello %s thanks for joining!", username);
-                    send_message(joinMessage);
+                    sprintf(messageString, "Bot: Hello %s thanks for joining!", username);
+                    send_message(messageString);//*/
                 }
             }
         }
