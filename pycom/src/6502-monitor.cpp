@@ -9,14 +9,14 @@ static bool clockFlag = false;
 
 void onClock() {
   clockFlag = true;
-  CNTR.digitalRead(0);
+  //xTaskCreatePinnedToCore(DebuggerTask, "6502 Debugger", 2000, NULL, 4, NULL, 1);
 };
 
 void DebuggerTask(void* parameters) {
   //for (;;){ //replacement for arduino loop
-  if (clockFlag) {
-    detachInterrupt(CLOCK);
-    clockFlag = false;
+  if (digitalRead(CLOCK)) {
+    //detachInterrupt(CLOCK);
+    //clockFlag = false;
     char output[25];
 
     uint16_t hexaddress = ADDR.readGPIOAB();
@@ -30,7 +30,8 @@ void DebuggerTask(void* parameters) {
       rwb ? 'r' : 'W', hexdata,
       (vda&&vpa) ? opcodeMatrix[hexdata]:"EXE");
     Serial.println(output);
-    attachInterrupt(CLOCK, onClock, RISING);
+    //vTaskDelete(NULL);
+    //attachInterrupt(CLOCK, onClock, RISING);
   }
   //}
 }

@@ -51,7 +51,7 @@ void setup() {
     //Wire.endTransmission();
     pinMode(CLOCK, INPUT);
     //arduino code always runs on core 1 so this is pinned there. perfect.
-    attachInterrupt(CLOCK, onClock, RISING);//*/
+    //attachInterrupt(CLOCK, onClock, RISING);//*/
     //arduino defaults to core 1 
     //xTaskCreatePinnedToCore(DebuggerTask, "6502 Debugger", 1000, NULL, 4, NULL, 1);
     //put wifi on core 0 
@@ -61,5 +61,10 @@ void setup() {
 }
 
 void loop(){
-    DebuggerTask(NULL);
+    //DebuggerTask(NULL);
+    if (Serial1.available()) {
+        Serial.write((char)Serial1.read());
+    } else if (Serial.available()) {
+        Serial1.write(Serial.read());
+    }
 }

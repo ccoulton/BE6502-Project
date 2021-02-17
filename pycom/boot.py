@@ -2,7 +2,6 @@ import pycom
 import sys
 from machine import Pin
 from network import WLAN
-ThreadKill = dict()
 
 def button_Pushed(arg):
     print("button Pushed")

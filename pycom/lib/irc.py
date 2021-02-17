@@ -1,7 +1,7 @@
-import socket, _thread
+import socket, _thread, time
 import oauth
-import pycom
-import time
+from pycom import rgbled as led
+from machine import rng as random
 
 #https://dev.twitch.tv/docs/client/guide
 #ws://irc-ws.chat.twitch.tv:80
@@ -26,8 +26,7 @@ def connectBot():
         raise exp
     finally:
         print("connectBot finished")
-        _thread.start_new_thread(Listener(),
-            ("Thread No:1",2))
+        _thread.start_new_thread(Listener, ())
 
 def send_Data(command):
     client.sendall(bytes(command + '\n', "UTF-8"))
@@ -40,24 +39,29 @@ def Listener():
         buffer = client.recv(1024).decode("utf-8")
         if buffer:
             print(str(buffer))
+            user = str(buffer[1:buffer.find('!', 1, 26)])
             msg = str(buffer).split()
             if "PING" in msg[0]:
                 send_Data("PONG %s" % msg[1]) #todo: add a randomized heartbeat message? or skip a few?
                 sendchat("Bot: Hey thanks for hanging out! Like what you see why not drop a follow.")
+                led(random())
             elif "!seen" in buffer:
                 sendchat("Bot: I see, I respond.")
             elif "!rgb" in buffer:
                 sendchat("Led command Recieved")
                 try:
-                    if 0xffffff >= int(msg[4]) >= 0:
-                        pycom.rgbled(int(msg[4]))
-                except IndexError:
-                    sendchat("Led command takes values from 0 to 0xffffff as second value")
+                    if msg[4] == 'help':
+                        sendchat("Bot: For defined RGB values check "
+                                "https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors."
+                                "Led command takes values from 0 to 0xffffff as second value")
+                    elif 0xffffff >= int(msg[4]) >= 0:
+                        led(int(msg[4]))
                 except Exception as exp:
                     print(exp)
-                    sendchat("Incorrect input; please try again type the command with out arguments for help")
+                    sendchat("Incorrect input; please try again, !rgb help, for info.")
             elif "!lurk" in buffer:
-                print(msg)
-                sendchat("Bot: Enjoy your lurk, Thanks for hanging out.")
+                sendchat("Bot: Enjoy your lurk %s, Thanks for hanging out." % user)
+            elif "!cmd" in buffer:
+                msg[4:]
             
         time.sleep(.5)

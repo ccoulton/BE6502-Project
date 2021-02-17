@@ -3,47 +3,22 @@
 import os
 import _thread, time
 from network import WLAN
-import utime, sys, pycom
-import pycom_mcp230xx as mcp230xx
+import utime, sys
 #from micropython import const
 import irc, oauth
 import machine
-from machine import I2C, Pin, UART
+from machine import UART
 
 serial = UART(1, 19200)
-i2c = I2C(0, I2C.MASTER)
-addresses = mcp230xx.MCP23017(i2c, 0x20)
-data = mcp230xx.MCP23008(i2c, 0x21)
-cntr = mcp230xx.MCP23008(i2c, 0x22)
-
-def clockpulsed(arg):
-    if serial.any():
-        print("Serial Ready.")
+def setupSerial():
+    serial.init(19200, bits=8, parity=None, stop=1)
+    _thread.start_new_thread(checkSerial, ())
 
 def checkSerial():
-    print(serial)
-    while True:
+    while 1:
         if serial.any():
-            print("Serial Ready.")
-        time.sleep(1)
-
-def setupdebugger():
-    clockIrq = Pin('P22', mode=Pin.IN, pull=Pin.PULL_DOWN)
-    clockIrq.callback(Pin.IRQ_RISING, handler=clockpulsed)
-    i2c.init(I2C.MASTER, baudrate=100000)
-    if len(i2c.scan()) is not 3:
-        print("i2cbus is not 3"+i2c.scan())
-    else:
-        print("I2C init.")
-    addresses.iodir = 0xffff #set both banks to input
-    data.iodir = 0xff #set all 8 bits to input
-    cntr.iodir = 0x0f #set bit 0-3 to input for the clock, rwb, vda, vpa
-    cntr.gpinten = 0xff
-    cntr.intcon = 0xff
-    print("GPIO", addresses.iodir, data.iodir, cntr.iodir, cntr.intcon, cntr.gpinten)
-    print("Initing the 65xx serial.")
-    serial.init(19200, bits=8, parity=None, stop=1)
-    #_thread.start_new_thread(checkSerial(), ("Thread No:2", 3))
+            print(serial.read())
+        time.sleep(.5)
 
 def connectWifi(retries):
     for attempt in range(retries):
@@ -73,5 +48,5 @@ def connectWifi(retries):
         sys.exit()
 
 connectWifi(10)
-#setupdebugger()
+setupSerial()
 irc.connectBot()

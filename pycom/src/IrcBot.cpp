@@ -113,7 +113,7 @@ void IrcBotTask(void* parameters) {
             if (strcmp(line, "PING") == 0) {
                 send_Data("PONG :", "tmi.twitch.tv"); //argument.
                 send_message("Bot: Hey Thanks for hanging out.");
-            } else if(result) {
+            } else if (result) {
                 char messageString[60];
                 char username[26];
                 char irccmd[10];
@@ -128,18 +128,26 @@ void IrcBotTask(void* parameters) {
                         sprintf(messageString, 
                             "Bot: Ok %s Enjoy your lurk.", username);
                         send_message(messageString);
-                    } else if (strcmp(command, "rgbled")) {
-                        if (ms.Match(":!rgbled 0x(%x*)", 0)) {
-                            ms.GetCapture(command, 0);
-                            led = strtoul(command, NULL, 16);
-                        } else if(ms.Match(":!rgbled help", 0)) {
-                            send_message("Bot: For defined RGB values check 
-                                https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors.");
+                    } else if (strcmp(command, "rgbled") == 0) {
+                        ms.Match(":!rgbled [0x(%x*)|(%d*)]");
+                        if (ms.MatchCount(":!rgbled 0x(%x*)")) {
+                            Serial.print(ms.GetCapture(command, 0));
+                            led = strtoul(command, NULL, HEX);
+                            Serial.println(led);
+                        } else if (ms.MatchCount(":!rgbled (%d*)")) {
+                            Serial.print(ms.GetCapture(command, 0));
+                            led = strtoul(command, NULL, DEC);
+                            Serial.println(led);
+                        } else if (ms.MatchCount(":!rgbled (help)")) {
+                            send_message("Bot: For defined RGB values check "
+                                "https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors.");
                         } else {
                             sprintf(messageString, 
                                 "Bot: Sorry %s RGB was not correct try again.", username);
                             send_message(messageString);
                         }
+                    } else {
+                        send_message("Bot: Command not found.");
                     }
                 } else if (strcmp(irccmd, "JOIN") == 0) {
                     sprintf(messageString, "Bot: Hello %s thanks for joining!", username);
