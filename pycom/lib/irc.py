@@ -51,9 +51,11 @@ def Listener():
                 sendchat("Led command Recieved")
                 try:
                     if msg[4] == 'help':
+                        sendchat("Bot: Led command takes values from 0 to 0xffffff as second value,"
+                                 "for a list of colors try !rgb colors.")
+                    elif msg[4] == 'colors':
                         sendchat("Bot: For defined RGB values check "
-                                "https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors."
-                                "Led command takes values from 0 to 0xffffff as second value")
+                                "https://github.com/FastLED/FastLED/wiki/Pixel-reference#colors.")
                     elif 0xffffff >= int(msg[4]) >= 0:
                         led(int(msg[4]))
                 except Exception as exp:
