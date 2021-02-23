@@ -46,6 +46,7 @@ _MCP23008_IPOL          = const(0x01)
 _MCP23008_GPINTEN       = const(0x02)
 _MCP23008_DEFVAL        = const(0x03)
 _MCP23008_INTCON        = const(0x04)
+# - - sread disslw - odr intpol - 
 _MCP23008_IOCON         = const(0x05)
 _MCP23008_GPPU          = const(0x06)
 _MCP23008_INTF          = const(0x07)

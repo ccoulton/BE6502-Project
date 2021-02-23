@@ -65,5 +65,6 @@ def Listener():
                 sendchat("Bot: Enjoy your lurk %s, Thanks for hanging out." % user)
             elif "!cmd" in buffer:
                 msg[4:]
-            
+            else:
+                sendchat("Command not reconized Please try again.")
         time.sleep(.5)

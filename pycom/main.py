@@ -1,15 +1,10 @@
 #https://docs.pycom.io/tutorials/networks/wlan/#connecting-to-a-router
 #https://docs.pycom.io/firmwareapi/micropython/usocket/
-import os
-import _thread, time
+import os, _thread, sys, machine, utime, time
 from network import WLAN
-import utime, sys
-#from micropython import const
 import irc, oauth
-import machine
-from machine import UART
 
-serial = UART(1, 19200)
+global serial = machine.UART(1, 19200)
 def setupSerial():
     serial.init(19200, bits=8, parity=None, stop=1)
     _thread.start_new_thread(checkSerial, ())
