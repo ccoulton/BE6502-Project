@@ -56,7 +56,15 @@ void CPU::run(int clock) {
         } 
         uint8 lownibble = intReg.reg & 0x0f;
         if (lownibble == 0x08) {
-        //php/clc/plp/sec/pha/cli/pla/sei/dey/tya/tay/clv/iny/cld/inx/sed
+            //php/plp push/pull status <-> stack
+            //clc/sec clear/set carry
+            //pha/pla push/pull acc <-> stack
+            //cli/sei clear/set i flag
+            //dey dec y reg
+            //tya/tay transfer y <-> acc
+            //clv clear v
+            //iny/inx incerment y/x 
+            //cld/sed clear/set d
         } else if (lownibble == 0x0B) {
         //phd/tcs/pld/tsc/phk/tcd/rtl/tdc/phb/txy/plb/tyx/wai/stp/xba/xce
         } else if (lownibble == 0x0A) {
