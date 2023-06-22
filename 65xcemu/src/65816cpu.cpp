@@ -1,13 +1,17 @@
 #include "../inc/typedef.h"
 #include "../inc/AddressSpace.h"
-#include "../inc/6502cpu.h"
+#include "../inc/65816cpu.h"
 
 CPU::CPU(AddressSpace &program) {
-    A = 0;
+    A.r = 0;
+    DBR = 0;
+    DIR.r = 0;
+    K = 0;
     PS.reg = 0x30;
-    SP = 0;
-    X = 0;
-    Y = 0;
+    SP.r = 0;
+    X.r = 0;
+    Y.r = 0;
+    emulation = true;
     intReg.reg = 0;
     mem = &program;
 }
@@ -31,16 +35,18 @@ void checkpageboundry(uint16 prev, uint16 curr, int* cycle) {
 }
 
 void CPU::run(int clock) {
+    auto getcondflag = [this](const int value) {
+        return  (value == negative) ? PS.flags.n  :
+                (value == overflow) ? PS.flags.v  :
+                (value == carry)    ? PS.flags.ce :
+                                      PS.flags.z;
+    };
     auto processBranchCond = [this](int *clock) {
     /* Handles conditional branching
      * BC(C|S), BNE, BEQ, BPL, BMI, BV(C|S)
      */
         if (intReg.cond.id == 0x10) {
-            bool condFlag = (intReg.cond.x == negative) ? PS.flags.n :
-                            (intReg.cond.x == overflow) ? PS.flags.v :
-                            (intReg.cond.x == carry)    ? PS.flags.ce:
-                                                          PS.flags.z;
-            if (condFlag != intReg.cond.y){
+            if (getcondflag(intReg.cond.x) != intReg.cond.y){
               PC.r += 2;
               (*clock)--;
             } else {
@@ -51,7 +57,7 @@ void CPU::run(int clock) {
         }
         return false;
     };
-    auto processNOP = [this] (int *clock) {
+    auto processNOP = [this](int *clock) {
         if ((intReg.reg == 0xEA) || (intReg.reg == 0x42)) {
           PC.r += (intReg.reg == 0x42); //WDM skips a byte
           (*clock)--;
@@ -65,7 +71,7 @@ void CPU::run(int clock) {
         if (processBranchCond(&clock)) {
             continue;
         }
-        if (processNOP(&clock)) {
+        if (proccessNOP(&clock)) {
             continue;
         }
         if (intReg.reg == 0x40) { //return from Interrupt
@@ -82,8 +88,7 @@ void CPU::run(int clock) {
                 case LDA:
                 case CMP:
                 case SBC:
-                break;
-            };
+            }
         } else if (intReg.groupx.group == GROUP2) {
             switch (intReg.groupx.optcode) {
                 case ASL:
@@ -94,8 +99,7 @@ void CPU::run(int clock) {
                 case LDX:
                 case DEC:
                 case INC:
-                break;
-            };
+            }
         } else if (intReg.groupx.group == GROUP3) {
             //implied single byte.
         } else if (intReg.groupx.group == GROUP4) {
@@ -103,28 +107,28 @@ void CPU::run(int clock) {
         }
         uint8 lownibble = intReg.reg & 0x0f;
         if (lownibble == 0x08) {
-          if ((intReg.groupx.addressing == ACC) &&
-             (intReg.groupx.optcode <= JMPABS)) {
-              uint8 pointer = SP;
+          if ((intReg.reg.addressing == ACC) &&
+             (intReg.reg.optcode <= JMPABS)) {
+              uint8 pointer = SP.r;
               uint8 *reg;
-              if (intReg.groupx.optcode <= BIT) {
+              if (intReg.reg.optcode <= BIT) {
                   reg = &PS.reg;
               //000 010 00  010 010 00
               //php/plp push/pull status <-> stack
               } else {
               //001 010 00  011 010 00
               //pha/pla push/pull acc <-> stack
-                  reg = &A;
+                  reg = &A.bytes.l;
               }
-              if (intReg.groupx.optcode & 2) { //plx
+              if (intReg.reg.optcode & 2) { //plx
                   //stack->reg
               } else { //phx
                   //reg->stack
               }
-          } else if ((intReg.groupx.addressing == ABS) &&
-              (intReg.groupx.optcode != STY)) {
-              bool clearset = intReg.groupx.optcode & 1;
-              uint8 mask = (intReg.groupx.optcode & 6);
+          } else if ((intReg.reg.addressing == ABS) &&
+              (intReg.reg.optcode != STY)) {
+              bool clearset = intReg.reg.optcode & 1;
+              uint8 mask = (intReg.reg.optcode & 6);
               switch (mask) {
                 case 0:
                   PS.flags.ce = clearset;
@@ -140,7 +144,7 @@ void CPU::run(int clock) {
                   break;
               }
           } else {
-              uint8* pointer = &Y;
+              uint8* pointer = &Y.bytes.l;
               //dey 100 010 00
               //dey dec y reg 8
               //iny 110 010 00 inx 111 010 00

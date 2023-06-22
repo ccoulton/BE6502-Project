@@ -9,12 +9,16 @@ class CPU {
         void fetchWordintoRegister(uint16 address,
                                   Register* output,
                                   int* cycle);
-        uint8 A;        //Accumulator
+        Register A;     //Accumulator
+        uint8 DBR;      //Data Bank register
+        Register DIR;   //Direct
+        uint8 K;        //Program Bank
         Register PC;    //ProgramCounter
         Status PS;      //Processor status register
-        uint8 SP;       //Stack pointer
-        uint8 X;        //X Register
-        uint8 Y;        //Y Register
+        Register SP;    //Stack pointer
+        Register X;     //X Register
+        Register Y;     //Y Register
+        bool emulation;
         instructionRegister intReg;
         AddressSpace *mem;
 };

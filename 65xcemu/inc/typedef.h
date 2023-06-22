@@ -1,7 +1,17 @@
-typedef unsigned char uint8;
-typedef unsigned int uint16;
+using uint8  = unsigned char;
+using uint16 = unsigned short;
 
 enum CPUVectors {
+/*65816
+  NCOP  = 0x00FFE4,
+  NABRT = 0x00FFE8,
+  NBRK  = 0x00FFE6,
+  NNMI  = 0x00FFEA,
+  NIRQ  = 0x00FFEE,
+*/
+//6502
+  ZPEND = 0x00FF,
+  SPEND = 0x01FF,
   COP   = 0xFFF4,
   ABORT = 0xFFF8,
   NMI   = 0xFFFA,
@@ -10,7 +20,9 @@ enum CPUVectors {
 };
 
 enum groups {
-    GROUP3, GROUP1, GROUP2, GROUP4
+    GROUP3, GROUP1, GROUP2, 
+//65816
+    GROUP4
 };
 
 /// aaabbbcc aaa & cc optcode, bbb addressing
