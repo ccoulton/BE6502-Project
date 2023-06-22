@@ -9,6 +9,10 @@ enum CPUVectors {
   IRQBRK= 0xFFFE
 };
 
+enum groups {
+    GROUP3, GROUP1, GROUP2, GROUP4
+};
+
 /// aaabbbcc aaa & cc optcode, bbb addressing
 enum groupXOpt { //aaaxxxcc
     //Group1 = 01
