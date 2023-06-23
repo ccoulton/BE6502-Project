@@ -1,5 +1,4 @@
 #include <fstream>
-
 class AddressSpace {
   public:
       inline AddressSpace() { InitMemory(0, NULL); };
@@ -12,21 +11,35 @@ class AddressSpace {
         InitMemory(startingAddress, file);
       };
 
-      inline void InitMemory(uint16 startingAddress, std::ifstream *file) {
-            for (uint16 index = startingAddress; index < 0xFFFF; index++) {
-                uint8 nextbyte;
-                if ((file != NULL) && (file->peek() != EOF)) {
-                    nextbyte = file->get();
-                } else {
-                    nextbyte = 0xEA;
-                }
-                mem[index] = nextbyte;
-            }
+      inline void loadTest() {
+        for(int index=0; index<16; index++) {
+            mem[0x8000+index] = testfile[index];
+        }
+        mem[0xfffc] = 0x00;
+        mem[0xfffd] = 0x80;
       };
 
       inline uint8 fetchAddress(uint16 address) {
           return mem[address];
       };
   private:
+    inline void InitMemory(uint16 startingAddress, std::ifstream *file) {
+        for (uint16 index = startingAddress; index < 0xFFFF; index++) {
+            uint8 nextbyte;
+            if ((file != NULL) && (file->peek() != EOF)) {
+                nextbyte = file->get();
+            } else {
+                nextbyte = 0xEA;
+            }
+            mem[index] = nextbyte;
+        }
+    };
+    uint8 testfile[15] = {
+        0xa9, 0xff,
+        0x8d, 0x02, 0x60,
+        0xa9, 0x55,
+        0x8d, 0x00, 0x60,
+        0x49, 0xff,
+        0x4c, 0x07, 0x80};
     uint8 mem[0xffff];
 };
