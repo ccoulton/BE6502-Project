@@ -1,14 +1,29 @@
+#include <fstream>
+
 class AddressSpace {
   public:
-      inline AddressSpace() { AddressSpace((uint16)0); };
+      inline AddressSpace() { InitMemory(0, NULL); };
+      
       inline AddressSpace(uint16 startingAddress) {
-          InitMemory(startingAddress);
+          InitMemory(startingAddress, NULL);
       };
-      inline void InitMemory(uint16 startingAddress) {
-          for (int index = startingAddress; index < 0xFFFF; index++)
-              mem[index] = 0xEA;
+
+      inline AddressSpace(std::ifstream *file, uint16 startingAddress) {
+        InitMemory(startingAddress, file);
       };
-      //inline AddressSpace(filepointer)
+
+      inline void InitMemory(uint16 startingAddress, std::ifstream *file) {
+            for (uint16 index = startingAddress; index < 0xFFFF; index++) {
+                uint8 nextbyte;
+                if ((file != NULL) && (file->peek() != EOF)) {
+                    nextbyte = file->get();
+                } else {
+                    nextbyte = 0xEA;
+                }
+                mem[index] = nextbyte;
+            }
+      };
+
       inline uint8 fetchAddress(uint16 address) {
           return mem[address];
       };

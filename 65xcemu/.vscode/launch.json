@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "by-gdb",
+            "request": "launch",
+            "name": "Launch(gdb)",
+            "program": "C:\\Users\\cc24220\\ws\\BE6502\\65xcemu\\6502emu.exe",
+            "cwd": "${workspaceRoot}",
+            "gdbpath": "c:\\Qt\\Qt5.15.0\\Tools\\mingw810_64\\bin\\gdb.exe"
+        },
+        {
+            "name": "C/C++: g++.exe build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "C:\\Users\\cc24220\\ws\\BE6502\\65xcemu\\6502emu.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "C:/msys64/mingw64/bin",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++.exe build active file"
+        }
+    ]
+}

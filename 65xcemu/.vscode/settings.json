@@ -1,0 +1,8 @@
+{
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "*.m": "octave",
+        "*.tcc": "cpp",
+        "iosfwd": "cpp"
+    }
+}
