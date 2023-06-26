@@ -4,6 +4,9 @@ class CPU {
         void Reset(int *cycle);
         void run(int clock);
     private:
+        void StoreAcc();
+        void LoadRegister(uint8* outputRegister, int* clock);
+        uint16 getZPOperandAddress(int* clock);
         //Vectors
         uint8 fetchValueFromAddress(uint16 address, int* cycle);
         void fetchWordintoRegister(uint16 address,

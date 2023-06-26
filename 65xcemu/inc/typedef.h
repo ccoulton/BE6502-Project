@@ -1,3 +1,5 @@
+//typedef unsigned char uint8;
+//typedef unsigned short uint16;
 using uint8  = unsigned char;
 using uint16 = unsigned short;
 

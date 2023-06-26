@@ -1,6 +1,6 @@
 OBJS = obj/cpu.o obj/6502cpu.o
-CFLAGS = -g
-CC = C:\Qt\Qt5.15.0\Tools\mingw810_64\bin\g++.exe
+CFLAGS = -std=c++11 -g
+CC = g++
 INCLUDE = 
 LIBS = -lm
 SOURCE = 

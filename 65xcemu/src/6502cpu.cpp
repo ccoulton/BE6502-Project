@@ -30,6 +30,54 @@ void checkpageboundry(uint16 prev, uint16 curr, int* cycle) {
     (*cycle)--;
 }
 
+void CPU::StoreAcc(){
+}
+
+uint16 CPU::getZPOperandAddress(int* clock) {
+    uint16 operandAddress = 0;
+    uint8 zpAddress = 0;
+    Register temp;
+    zpAddress += fetchValueFromAddress(PC.r++, clock);
+    operandAddress = zpAddress;
+    if ((intReg.groupx.addressing == ZPX) ||
+        (intReg.groupx.addressing == ZPYI)) {
+        zpAddress += (intReg.groupx.addressing == ZPX) X : 0;
+        fetchWordintoRegister(zpAddress, &temp, clock);
+        operandAddress = temp.r;
+        operandAddress += (intReg.groupx.addressing == ZPYI) ? Y : 0;
+    }
+    return operandAddress;
+}
+ 
+void CPU::LoadRegister(uint8* outputRegister, int* clock) {
+    uint16 operandAddress = 0;
+    Register tempRegister;
+    if (        (intReg.groupx.addressing == ZP)   ||
+                (intReg.groupx.addressing == ZPX)  ||
+                (intReg.groupx.addressing == ZPYI) || 
+                (intReg.groupx.addressing == ZPXYI)) {
+        operandAddress = getZPOperandAddress(clock);
+    } else if (intReg.groupx.addressing == IMD) {
+        operandAddress = PC.r;
+        PC.r++;
+    } else if ( (intReg.groupx.addressing == ABS) ||
+                (intReg.groupx.addressing == ABSYI) ||
+                (intReg.groupx.addressing == ABSXI)) {
+        fetchWordintoRegister(PC.r, &tempRegister, clock);
+        PC.r += 2;
+        operandAddress = tempRegister.r;
+        if (intReg.groupx.addressing == ABSXI) {
+            operandAddress += X ;
+        } else if (intReg.groupx.addressing == ABSYI) {
+            operandAddress += Y;
+        }
+    }
+    //(zp),y, zp,X
+    *outputRegister = fetchValueFromAddress(operandAddress, clock);
+    PS.flags.z = (*outputRegister == 0);
+    PS.flags.n = (*outputRegister & 0x80);
+}
+
 void CPU::run(int clock) {
     auto processBranchCond = [this](int *clock) {
     /* Handles conditional branching
@@ -79,7 +127,15 @@ void CPU::run(int clock) {
                 case EOR:
                 case ADC:
                 case STA:
+                    if (intReg.groupx.addressing != IMD) {
+                        StoreAcc();
+                    } else {
+                        // BIT #
+                    }
+                    break;
                 case LDA:
+                    LoadRegister(&A, &clock);
+                    break;
                 case CMP:
                 case SBC:
                 break;
@@ -92,6 +148,8 @@ void CPU::run(int clock) {
                 case ROR:
                 case STX:
                 case LDX:
+                    LoadRegister(&X, &clock);
+                    break;
                 case DEC:
                 case INC:
                 break;
