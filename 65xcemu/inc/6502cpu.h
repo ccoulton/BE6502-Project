@@ -4,7 +4,7 @@ class CPU {
         void Reset(int *cycle);
         void run(int clock);
     private:
-        void StoreAcc();
+        void StoreAcc(int* cycle);
         void LoadRegister(uint8* outputRegister, int* clock);
         uint16 getZPOperandAddress(int* clock);
         //Vectors

@@ -19,9 +19,14 @@ class AddressSpace {
         mem[0xfffd] = 0x80;
       };
 
-      inline uint8 fetchAddress(uint16 address) {
-          return mem[address];
-      };
+    inline uint8 fetchAddress(uint16 address) {
+        return mem[address];
+    };
+
+    inline void writeAddress(uint16 address, uint8 value) {
+        //block from writing into EEPROM?
+        mem[address] = value;
+    };
   private:
     inline void InitMemory(uint16 startingAddress, std::ifstream *file) {
         for (uint16 index = startingAddress; index < 0xFFFF; index++) {
@@ -35,11 +40,17 @@ class AddressSpace {
         }
     };
     uint8 testfile[15] = {
+        //0x8000-1
         0xa9, 0xff,         //LDA #$ff
+        //0x8002-4
         0x8d, 0x02, 0x60,   //STA $6002
+        //0x8005-6
         0xa9, 0x55,         //LDA #$55
+        //0x8007-9
         0x8d, 0x00, 0x60,   //STA $6000
+        //0x800A-B
         0x49, 0xff,         //xor #$FF
+        //0x800C-E
         0x4c, 0x07, 0x80};  //JMP $8007
     uint8 mem[0xffff];
 };

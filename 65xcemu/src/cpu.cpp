@@ -8,6 +8,6 @@ int main() {
   AddressSpace program(0x8000);
   program.loadTest();
   CPU cpu(program);
-  cpu.run(4);
+  cpu.run(17);
   return 0;
 }
