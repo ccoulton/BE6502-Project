@@ -5,9 +5,12 @@ class CPU {
         void run(int clock);
     private:
         void StoreAcc(int* cycle);
+        void ExclusiveOr(int* cycle);
+        void AndAccumulator(int* cycle);
+        void OrAccumulator(int* cycle);
         void LoadRegister(uint8* outputRegister, int* clock);
         uint16 getZPOperandAddress(int* clock);
-        //Vectors
+        void assignValueToAddress(uint16 address, uint8 value, int* cycle);
         uint8 fetchValueFromAddress(uint16 address, int* cycle);
         void fetchWordintoRegister(uint16 address,
                                   Register* output,

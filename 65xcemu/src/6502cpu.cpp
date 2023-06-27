@@ -21,6 +21,11 @@ uint8 CPU::fetchValueFromAddress(uint16 address, int* cycle) {
     return mem->fetchAddress(address);
 }
 
+void CPU::assignValueToAddress(uint16 address, uint8 value, int* cycle) {
+    (*cycle)--;
+    mem->writeAddress(address, value);
+}
+
 void CPU::fetchWordintoRegister(uint16 address, Register* output, int* cycle) {
     output->bytes.l = fetchValueFromAddress(address++, cycle);
     output->bytes.h = fetchValueFromAddress(address, cycle);
@@ -31,12 +36,53 @@ void checkpageboundry(uint16 prev, uint16 curr, int* cycle) {
 }
 
 void CPU::StoreAcc(int* cycle) {
+    //STA ZP 2,3/(zp,x) 2,4/abs 3,4/abs,x|y 3,5/(indirect,x) 2,6/(indirect),y 2,6
     Register tempReg;
     if (intReg.groupx.addressing == ABS) {
-        fetchWordintoRegister(PC.r, &tempReg, cycle);
+        fetchWordintoRegister(PC.r, &tempReg, cycle); //+2 clocks
         PC.r += 2;
     }
-    mem->writeAddress(tempReg.r, A);
+    assignValueToAddress(address, value, cycle); //+1 cycle
+}
+
+void CPU::AndAccumulator(int* cycle) {
+    uint8 operand;
+    uint16 operandAddress;
+    operandAddress = PC.r++;
+    operand = fetchValueFromAddress(operandAddress, cycle);
+    A = A & operand;
+    PS.flags.z = (A == 0);
+    PS.flags.n = ((A & 0x80) == 0x80);
+}
+
+void CPU::OrAccumulator(int* cycle) {
+    uint8 operand;
+    uint16 operandAddress;
+    operandAddress = PC.r++;
+    operand = fetchValueFromAddress(operandAddress, cycle);
+    A = A | operand;
+    PS.flags.z = (A == 0);
+    PS.flags.n = ((A & 0x80) == 0x80); 
+}
+
+void CPU::ExclusiveOr(int* cycle) {
+    uint8 operand;
+    uint16 operandAddress;
+    if (    (intReg.groupx.addressing == ZP)   ||
+            (intReg.groupx.addressing == ZPX)  ||
+            (intReg.groupx.addressing == ZPYI) ||
+            (intReg.groupx.addressing == ZPXYI)) {
+        operandAddress = getZPOperandAddress(clock);
+        //if (intReg.groupx.addressing == ZPXYI) {
+        //    operandAddress += (&X == )
+        //}
+    }else if (intReg.groupx.addressing == IMD) {
+        operandAddress = PC.r++;
+    }
+    operand = fetchValueFromAddress(operandAddress, cycle);
+    A = A ^ operand;
+    PS.flags.z = (A == 0);
+    PS.flags.n = ((A & 0x80) == 0x80);
 }
 
 uint16 CPU::getZPOperandAddress(int* clock) {
@@ -82,9 +128,10 @@ void CPU::LoadRegister(uint8* outputRegister, int* clock) {
     }
     *outputRegister = fetchValueFromAddress(operandAddress, clock);
     PS.flags.z = (*outputRegister == 0);
-    PS.flags.n = (*outputRegister & 0x80);
+    PS.flags.n = ((*outputRegister & 0x80) == 0x80);
 }
 
+//void CPU::ExcuteCommand
 void CPU::run(int clock) {
     auto processBranchCond = [this](int *clock) {
     /* Handles conditional branching
@@ -124,15 +171,24 @@ void CPU::run(int clock) {
             continue;
         }
         if (intReg.reg == 0x40) { //return from Interrupt
+            continue;
         }
         if (intReg.reg == 0x60) { //return from subroutine
+            continue;
         }
         if        (intReg.groupx.group == GROUP1) {
             switch (intReg.groupx.optcode) {
                 case ORA:
+                    OrAccumulator(&clock);
+                    break;
                 case AND:
-                case EOR:
+                    AndAccumulator(&clock);
+                    break;
+                case EOR: //xor?
+                    ExclusiveOr(&clock);
+                    break;
                 case ADC:
+                    //Add with carry
                 case STA:
                     if (intReg.groupx.addressing != IMD) {
                         StoreAcc(&clock);
@@ -144,22 +200,32 @@ void CPU::run(int clock) {
                     LoadRegister(&A, &clock);
                     break;
                 case CMP:
+                    //compare to ACC
                 case SBC:
-                break;
+                    //subtrack with carry
+                    break;
             };
+            continue;
         } else if (intReg.groupx.group == GROUP2) {
             switch (intReg.groupx.optcode) {
                 case ASL:
+                    //arithmetic shift left
                 case ROL:
+                    //roll left
                 case LSR:
+                    //logical shift right
                 case ROR:
+                    //roll right
                 case STX:
+                    //store x
                 case LDX:
-                    //LoadRegister(&X, &clock);
+                    LoadRegister(&X, &clock);
                     break;
                 case DEC:
+                    //dec acc
                 case INC:
-                break;
+                    //inc acc
+                    break;
             };
         } else if (intReg.groupx.group == GROUP3) {
             //implied single byte.
@@ -167,10 +233,10 @@ void CPU::run(int clock) {
                 fetchWordintoRegister(PC.r, &PC, &clock);
             }
         } else if (intReg.groupx.group == GROUP4) {
-
+            continue;
         }
         uint8 lownibble = intReg.reg & 0x0f;
-        if (lownibble == 0x08) {
+        if (lownibble == 0x08) { //B AAA 010 00
           if ((intReg.groupx.addressing == ACC) &&
              (intReg.groupx.optcode <= JMPABS)) {
               uint8 pointer = SP;
@@ -186,6 +252,7 @@ void CPU::run(int clock) {
               }
               if (intReg.groupx.optcode & 2) { //plx
                   //stack->reg
+                  mem->write( , &clock);
               } else { //phx
                   //reg->stack
               }
@@ -216,7 +283,7 @@ void CPU::run(int clock) {
               //tya 100 110 00 tay 101 010 00
               //tya/tay transfer y <-> acc 9/A
           }
-        } else if (lownibble == 0x0B) {
+        } else if (lownibble == 0x0B) { //bAAAB 1011
           //phd/pld push/pull Direct
           //phk push K
           //phb/plb push/pull DBR
